@@ -8,9 +8,6 @@ For details of how this code works see:
 
 
 
-## Structure of placement algorithm
-
-<img src="https://github.com/soumenroy/hdbank/blob/cd05a491a80206ffd13c978a52b546cbe6c1507f/docs/algo.png" width="400">
 
 ## Installation
 One key component for generating the hybrid bank is metric over the dimensionless chirp time coordinate. To compute the metric, we modified in the LALSimulation code base. So, we first create a conda environment and install LALSuite.
@@ -49,3 +46,6 @@ cd ..
 `pip install .`
 
 
+## Structure of placement algorithm
+
+<img src="https://github.com/soumenroy/hdbank/blob/cd05a491a80206ffd13c978a52b546cbe6c1507f/docs/algo.png" width="400">
