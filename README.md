@@ -20,12 +20,12 @@ sh install.sh
 ```
 
 ### Install step-by-step
-#### Clone hdbank repository
-```
-git clone https://github.com/soumenroy/hdbank.git
-cd hdbank
-```
-#### Clone LALSuite repository
+1. Clone hdbank repository
+  ```
+  git clone https://github.com/soumenroy/hdbank.git
+  cd hdbank
+  ```
+2. Clone LALSuite repository
 ```
 git clone https://git.ligo.org/lscsoft/lalsuite.git
 cd lalsuite
@@ -33,7 +33,7 @@ git checkout lalsuite-v7.3
 cp ../ modify.patch
 git apply modify.patch
 ```
-#### Create conda environment and install LALSuite 
+3. Create conda environment and install LALSuite 
 ```
 conda env create --name hdb -f conda/environment.yml
 conda activate hdb
@@ -42,7 +42,7 @@ conda activate hdb
 make -j 4 && make install
 cd ..
 ```
-#### Install hdbank
+4. Install hdbank
 `pip install .`
 
 
