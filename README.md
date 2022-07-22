@@ -8,6 +8,20 @@ For details of how this code works see:
 
 
 ## Installation
-One key component for generating the hybrid bank is metric over the dimensionless chirp time coordinate. To compute the metric, we modified in the LALSimulation code base.
+One key component for generating the hybrid bank is metric over the dimensionless chirp time coordinate. To compute the metric, we modified in the LALSimulation code base. So, we first create a conda environment and install LALSuite.
+
+```
+git clone git@git.ligo.org:lscsoft/lalsuite.git
+cd lalsuite
+git checkout lalsuite-v7.3
+
+git apply modify.patch
+conda env create --name hdbank -f conda/environment.yml
+conda activate hdbank
+./00boot
+./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal --enable-lalsimulation
+make -j 4 && make install
+```
+
 Clone: `git clone https://github.com/soumenroy/hdbank.git`
 
