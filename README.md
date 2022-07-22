@@ -27,7 +27,7 @@ git apply modify.patch
 conda env create --name hdbank -f conda/environment.yml
 conda activate hdbank
 ./00boot
-./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal --enable-lalsimulation
+./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal --enable-lalsimulation --enable-lalinspiral
 make -j 4 && make install
 ```
 
