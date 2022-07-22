@@ -38,7 +38,7 @@ git apply modify.patch
 conda env create --name hdb -f conda/environment.yml
 conda activate hdb
 ./00boot
-./configure --prefix=$CONDA_PREFIX --disable-all-lal  --enable-lalsimulation --enable-lalinspiral --enable-lalframe --enable-lalmetaio --enable-lalburst
+./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal  --enable-lalsimulation --enable-lalinspiral --enable-lalframe --enable-lalmetaio --enable-lalburst
 make -j 4 && make install
 cd ..
 ```
