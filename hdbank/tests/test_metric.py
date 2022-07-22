@@ -1,6 +1,4 @@
 import numpy as np
-from lalinspiral.sbank.psds import get_PSD, get_ASD
-import lal
 import lalsimulation
 from .. import metric
 
