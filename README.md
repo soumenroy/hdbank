@@ -14,7 +14,7 @@ One key component for generating the hybrid bank is metric over the dimensionles
 git clone git@git.ligo.org:lscsoft/lalsuite.git
 cd lalsuite
 git checkout lalsuite-v7.3
-
+wget https://raw.githubusercontent.com/soumenroy/hdbank/main/patch/modify.patch
 git apply modify.patch
 conda env create --name hdbank -f conda/environment.yml
 conda activate hdbank
