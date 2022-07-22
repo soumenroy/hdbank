@@ -12,7 +12,7 @@ One key component for generating the hybrid bank is metric over the dimensionles
 
 ### Install LALSuite including a patch
 ```
-git clone git@git.ligo.org:lscsoft/lalsuite.git
+git clone https://git.ligo.org/lscsoft/lalsuite.git
 cd lalsuite
 git checkout lalsuite-v7.3
 wget https://raw.githubusercontent.com/soumenroy/hdbank/main/patch/modify.patch
