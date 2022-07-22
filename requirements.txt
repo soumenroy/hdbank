@@ -1,0 +1,6 @@
+h5py
+lscsoft-glue
+numpy
+python-ligo-lw
+scipy
+

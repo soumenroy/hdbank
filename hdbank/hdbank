@@ -1,0 +1,670 @@
+#!/usr/bin/env python
+
+"""
+Hybrid template bank generator for aligned-spin system using Numerical metric as well as 
+analytical metric. The bank can be generated using SEOBNRv4_ROM, IMRPHenomD, IMRPhenomB and TaylorF2RedSpin
+approximants.
+"""
+import os
+import argparse
+from configparser import ConfigParser
+import os, sys
+import logging
+import numpy as np
+from time import strftime
+
+import lal
+import lalsimulation as lalsim
+from lalinspiral.sbank.tau0tau3 import urand_tau0tau3_generator, set_default_constraints, mtotal_eta_to_mass1_mass2
+
+import hdbank.metric as metric_utils
+import hdbank.randpts as randpts_utils
+import hdbank.utils as bankMisc
+import hdbank.psds as psd
+
+from ligo.lw import lsctables
+from ligo.lw import utils as ligolw_utils
+from ligo.lw.ligolw import LIGOLWContentHandler
+import h5py
+
+
+class DefaultContentHandler(LIGOLWContentHandler):
+    pass
+lsctables.use_in(DefaultContentHandler)
+
+
+
+
+usage = """
+
+BNS: Assumes equal aligned spin.
+hdbank --approximant IMRPhenomD \\
+                    --min-mass1 20.0 --max-mass1 100.0 \\
+                    --min-mass2 20.0 --max-mass2 100.0  \\
+                     --min-bh-spin -0.05 --max-bh-spin 0.99 \\
+                     --min-match 0.97 \\
+                     --flow 20.0 --fhigh 1024.0 --df 0.1 \\
+                     --psd-model aLIGOZeroDetHighPower \\
+                     --channel-name H1 \\
+                     --random-list-size 100000 \\
+                     --template-bin-size 1000 \\
+                     --random-seed 6 \\
+                     --output-filename BBH_HYBRID_BANK.xml.gz \\
+                     --write-metric \\
+"""
+
+parser = argparse.ArgumentParser(description=__doc__[1:], \
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter, usage=usage)
+
+
+
+
+def checkpoint_data(_dir):
+    _dir = _dir + '/%s' 
+    np.save(_dir%tlist_fname, np.array(tList))
+    np.save(_dir%rlist_fname, np.array(rList_deleter._rList) )
+    np.save(_dir%mlist_fname, np.array(mList))
+    np.savetxt(_dir%run_index_fname, [ind, ind_start] )
+
+
+parser.add_argument( "--approximant", 
+                    type=str, required=True, default=None, action="store",
+                    help="Required. Specify the approximant to use for waveform generation."
+                          " Choose from %s" %(', '.join(metric_utils.waveform_dict.keys())))
+
+parser.add_argument("--min-mass1",
+                    type=float,  default=None, required=True, action="store",
+                    help="Set minimum mass of the first object: must be >= min-mass2. REQUIRED. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--max-mass1",
+                    type=float,  default=None, required=True, action="store",
+                    help="Set maximum mass of the first object: must be >= max-mass2. REQUIRED. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--min-mass2",
+                    type=float,  default=None, required=True, action="store",
+                    help="Set minimum mass of the second object: must be <= min-mass1. REQUIRED. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--max-mass2",
+                    type=float,  default=None, required=True, action="store",
+                    help="Set maximum mass of the second object: must be <= max-mass1. REQUIRED. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--min-total-mass",
+                    type=float,  default=None, action="store",
+                    help="Set minimum total mass of the system: must be >= min-mass2 + min-mass2. OPTIONAL. "
+                         "If not specified, the minimum mass is determined from the provided component mass. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--max-total-mass",
+                    type=float,  default=None, action="store",
+                    help="Set maximum total mass of the system: OPTIONAL. "
+                         "If not specified, the minimum mass is determined from the provided component masses."
+                         "UNITS=Solar mass")
+
+parser.add_argument("--min-chirp-mass",
+                    type=float, default=None, action="store",
+                    help="Set minimum chirp mass of the system. OPTIONAL. "
+                         "If not specified the minimum chirp mass is determined from the provided component mass. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--max-chirp-mass",
+                    type=float, default=None, action="store",
+                    help="Set maximum chirp mass of the system. OPTIONAL. "
+                         "If not specified the maximum chirp mass is determined from the provided component mass. "
+                         "UNITS=Solar mass")
+
+parser.add_argument("--min-duration", 
+                    type=float, default=None,
+                    help="Set minimum allowed duration of the template waveform in seconds.")
+
+parser.add_argument("--max-duration",
+                    type=float, default=None,
+                    help="Set maximum allowed duration of the template waveform in seconds.")
+
+parser.add_argument("--min-eta",
+                    type=float, default=None, action="store",
+                    help="Set minimum symmetric mass ratio of the system. must be 0.0 >= eta >= 0.25. OPTIONAL."
+                         "If not specified the minimum symeetric mass ratio is determined from prvided component mass"
+                         "UNITS=Dimensionless.")
+
+parser.add_argument("--max-eta",
+                    type=float, default=0.25, action="store",
+                    help="Set maximum symmetric mass ratio of the system. must be 0.0 >= eta >= 0.25. OPTIONAL"
+                         "If not specified the maximum symeetric mass ratio is determined from prvided component mass"
+                         "UNITS=Dimensionless.")
+
+parser.add_argument("--min-spin1",
+                   type=float, default = None, action="store",
+                   help="Set minimum allowed value for the spin of the first component."
+                        "REQUIRED to generate the bank using TaylorF2RedSpin approximant otherwise OPTIONAL"
+                        "UNITS=Dimensionless")
+    
+parser.add_argument("--max-spin1", 
+                  type=float, default = None, action="store",
+                  help="Set maximum allowed value for the spin of the first component."
+                       "REQUIRED to generate the bank using TaylorF2RedSpin approximant otherwise OPTIONAL"
+                       "UNITS=Dimensionless")
+
+parser.add_argument("--min-spin2",
+                    type=float, default = None, action="store",
+                    help="Set minimum allowed value for the spin of the second component."
+                         "REQUIRED to generate the bank using TaylorF2RedSpin approximant otherwise OPTIONAL"
+                         "UNITS=Dimensionless")
+
+parser.add_argument("--max-spin2",
+                    type=float, default = None, action="store",
+                    help="Set maximum allowed value for the spin of the second component."
+                         "REQUIRED to generate the bank using TaylorF2RedSpin approximant otherwise OPTIONAL"
+                         "UNITS=Dimensionless")
+
+parser.add_argument("--min-bh-spin",
+                    type=float, default=None, action="store",
+                    help="Set minimum limit of aligned spin of the BH to generate the bank. "
+                         "REQUIRED to generate the bank using IMR waveform family otherwise OPTIONAL. "
+                         "Assumed to be lower bound on equal-aligned-spin system. "
+                         "UNITS=Dimensionless")
+
+parser.add_argument("--max-bh-spin",
+                    type=float, default=None, action="store",
+                    help="Set maximum limit of aligned spin of the BH to generate the bank. "
+                         "REQUIRED to generate the bank using IMR waveform family otherwise OPTIONAL. "
+                         "Assumed to be higher bound on equal-aligned-spin system. "
+                         "UNITS=Dimensionless")
+
+
+parser.add_argument("--nsbh-boundary-mass",
+                    type=float, default=2.0, action="store",
+                    help="Set a boundary mass between NS and BH to restricted the spin bound."
+                         "Objects with mass smaller (larger) than the boundary mass are "
+                         "considered NSs (BHs) and use spin bounds given by --min/max-ns-spin "
+                         "(--min/max-bh-spin) for IMR waveform family, otherwise --min/max-spin2 "
+                         "(--min/max-spin1)."
+                         "UNITS=Solar mass")
+
+
+parser.add_argument("--min-ns-spin",
+                    type=float, default=None, action="store",
+                    help="Set minimum limit of aligned spin of the NS to generate the bank. "
+                         "REQUIRED to generate the bank using IMR waveform family otherwise OPTIONAL. "
+                         "Assumed to be lower bound on equal-aligned-spin system. "
+                         "UNITS=Dimensionless")
+
+parser.add_argument("--max-ns-spin",
+                    type=float, default=None, action="store",
+                    help="Set minimum limit of aligned spin of the BH to generate the bank. "
+                         "REQUIRED to generate the bank using IMR waveform family otherwise OPTIONAL. "
+                         "Assumed to be lower bound on equal-aligned-spin system. "
+                         "UNITS=Dimensionless")
+
+
+parser.add_argument("--PhenomB-spin-truncate", default=False, action="store_true",
+                    help = "Set the flag to truncate over spin bounds, "
+                    "since IMRPhenomB model is reliable within spin limit "
+                    "-0.85 <= chi_eff <= 0.85 for mass ratio q <= 4, "
+                    "and -0.5 <= chi_eff <= 0.75 for mass ratio 4 < q <= 10.")
+
+
+parser.add_argument("--enable-exact-match",
+                   default=False, action="store_true",
+                   help="Set this flag to include the exact match function to "
+                   "compute the match between the new neighbors and the templates "
+                   "already in the bank and also for deletion. If you enable this "
+                    "flag then parallel processing is highly require.")
+
+parser.add_argument("--number-threads",
+                   type=int, default=None, action="store",
+                   help="Set the number of threads for parallel processing "
+                   "It is highly require if you use the flag --enable-exact-match.")
+
+
+parser.add_argument("--min-match",
+                    type=float, default=0.97, required=True, action="store",
+                    help="Set minimal match of the bank. RQUIRED."
+                         "The hybrid method constructs the bank by using a scaled metric. must be >= 0.94")
+
+parser.add_argument("--fref",
+               type=float, default=None, action="store", 
+               help="Set refernce frequency to compute the metric on the parameter space. REQUIRED. "
+                    "If user does not set the reference frequency then it will choose "
+                    "the value lower cutoff frequency. "
+                    "UNITS=Hz")
+
+parser.add_argument("--flow",
+                    type=float, default=None, required=True, action="store",
+                    help="Set lower cutoff frequency to compute the metric on the parameter space. REQUIRED. "
+                         "Metric is used to calculate the match."
+                         "UNITS=Hz")
+
+parser.add_argument("--optimize-flow",
+                    type=float, default=None, action="store",
+                    help="Increase the low-frequency cutoff by a variable amount so as to make each waveform"
+                         "as short as possible, but recovering at least FRACTION of the range as calculated"
+                         "using the original cutoff. The resulting frequency is stored according to the"
+                         "--flow-column option.")
+
+parser.add_argument("--flow-column",
+                    type=str, default="alpha6", action="store",
+                    help="If given, store the low-frequency cutoff for each template in column NAME of the single-inspiral table.")
+
+
+parser.add_argument("--fhigh",
+                    type=float, default=None, required=True, action="store",
+                    help="Set highest cutoff frequency to compute the metric on the parameter space. REQUIRED. "
+                         "Metric is used to calculate the match. "
+                         "UNITS=Hz")
+
+parser.add_argument("--df",
+                    type=float, default=None, required=True, action="store",
+                    help="Set frequency sampling to compute the metric on the parameter space. REQUIRED. "
+                         "Metric is used to calculate the match."
+                         "UNITS=Hz")
+
+parser.add_argument("--psd-model",
+                   type=str, default=None, action="store",
+                   help="Set a noise model to generate the PSD from a set of availabel analytical models."
+                    " Choose from %s" %(', '.join(psd.get_lalsim_psd_list())))
+
+parser.add_argument("--psd-file",
+                   default=None, 
+                   help="Set PSD by providing a PSD ASCII file. "
+                        "The PSD is assumed to be infinite below the lower cutoff frequency and "
+                        "beyond the maximum frequency contained in the file. 1D spline interpolation "
+                        "is used to get the PSD from flow to fhigh with steps through the sampling rate.")
+
+parser.add_argument("--asd-file",
+                   default=None,
+                   help="Set PSD by providing a ASD ASCII file. "
+                        "The ASD is assumed to be infinite below the lower cutoff frequency and "
+                        "beyond the maximum frequency contained in the file. 1D spline interpolation "
+                        "is used to get the PSD from flow to fhigh with steps through the sampling rate.")
+
+
+parser.add_argument("--channel-name",
+                    type=str, default=None, action="store",
+                    help="The channel containing the gravitational strain data")
+
+parser.add_argument("--write-metric", default=False, action="store_true", 
+                   help="Set this flag to write the calculated metric components to disk. OPTIONAL")
+
+parser.add_argument("--neighborhood-size",
+                    default = 0.25, type=float, action="store",
+                    help="Specify the window size over \"tau0\" to find \"nearby\" random points."
+                         "Window used to compute the match between local An-star neighbors and"
+                         "templates already in bank. Also used to efficient the deletion process"
+                         "of random points. The default nhood_size_theta0ue of 0.25 is not optimized, choose "
+                         "from the notion of stochastic bank generator lalapps_cbc_sbank. "
+                         "REQUIRED, UNITS=Second \n")
+
+parser.add_argument("--random-list-size", action="store",
+                    type=int, required=True, default=3000000,
+                    help="Set the size of uniform random points list over the deemed parameter space. "
+                         "The code terminates when all the random is exhausted. REQUIRED")
+
+parser.add_argument("--random-seed", action="store", type=int,
+                    default=6161, required=True,
+                    help="""Random seed to use when calling numpy.random
+                            functions used in obtaining the principal 
+                            components and when translating points back to 
+                            physical space.  
+                            If given, the code should give the same output 
+                            when run with the same random seed.""")
+
+parser.add_argument("--starting-point",
+                   default=[], nargs='+', type=float,
+                   help="Set the starting point of the template placement. "
+                        "It must be specified with a mass1 mass2. OPTIONAL")
+
+parser.add_argument("--optimize-A3star-lattice-orientation",
+                   default=False, action="store_true",
+                   help="Set this flag to calculate the optimal the orientation "
+                        "of the A3 star lattice. The template bank using the optimal "
+                        "orienation of A3 star lattice can occupy maximum parameter "
+                        "space volume with minimum number of templates. If you enable this "
+                        "flag then parallel processing is highly require.")
+
+parser.add_argument("--A3-star-orientation",
+                   default=[], nargs='+', type=float,
+                   help="Set the orientation of A3 star lattice if you do not want "
+                        "calculate the optimal orientation.")
+
+parser.add_argument("--bank-seed", 
+                    default=[], nargs='+', type=str,
+                    help="Add templates from FILE to the initial bank. If APPROX is also specified,"
+                         "the templates from this seed bank will be computed with the specified"
+                         " --approximant. Only the additional templates will be outputted.")
+
+parser.add_argument("--rlist-seed", 
+                    default=[], nargs='+', type=str,
+                    help="Add templates from FILE to the initial bank. If APPROX is also specified,"
+                         "the templates from this seed bank will be computed with the specified"
+                         " --approximant. Only the additional templates will be outputted.")
+
+parser.add_argument("--template-bin-size", action="store",
+                    required=True, type=int, default=1000,
+                    help="Specify the number of templates in each bin to delete the random"
+                         "points efficiently. The dletion prcoces constructs the Binary"
+                         "Search Tree for each bin using the random points wich are within "
+                         "a distance \"delta tau_0 = 0.25\". REQUIRED.")
+
+parser.add_argument("--output-filename",
+                   required=True, type=str, default=None,
+                   help="Output filename of the template bank. REQUIRED.")
+
+parser.add_argument("--verbose", action="store_true", default=False, 
+                    help="verbose output")
+
+
+args = parser.parse_args()
+if args.verbose:
+    log_level = logging.DEBUG
+else:
+    log_level = logging.WARN
+logging.basicConfig(format='%(asctime)s %(message)s', level=log_level)
+
+proc_start_time = int(lal.GPSTimeNow())
+
+
+## Initialize the file names for backup
+tlist_fname = 'tlist.npy'
+mlist_fname = 'mlist.npy'
+rlist_fname = 'rlist.npy'
+run_index_fname = 'running_index.txt'
+angl_fname = 'a3star_rot_angles.txt'
+
+cwd = os.getcwd()
+backup_dir = '%s/backup'%cwd
+if not os.path.isdir(backup_dir):
+    os.mkdir(backup_dir)
+
+
+max_mismatch = 1.0 - args.min_match    
+nhood_size_theta0 = 2.0 * lal.PI * args.flow * args.neighborhood_size
+
+# Verify the argparse input options
+bankMisc.verify_argparse_options(args, parser, nonSpin=False)
+
+logging.info("Obtaining PSD")
+PSD, ASD, noise_generator = psd.get_psd_from_arguments(args)
+
+
+logging.info("Setting up the coordinate utils")
+coord_utils = bankMisc.coord_transform_utils[args.approximant](args, PSD, ASD, noise_generator)
+bndry_utils = bankMisc.chk_bndry_utils[args.approximant](args)
+
+
+logging.info("Setting up the metric calculation")
+metric = metric_utils.waveform_dict[args.approximant](0.0, args.fref, args.flow, args.fhigh, args.df, ASD, \
+                    delta_param = 0.0005, nsbh_bound=args.nsbh_boundary_mass,\
+                    approximant = args.approximant, optimize_flow =args.optimize_flow)
+
+logging.info("Orientation of A3-star lattice")
+ang_path = '%s/%s'%(backup_dir, angl_fname)
+A3_star_rotation = bankMisc.PrallelProcessingUtilsForA3StarOrientation(args)
+if os.path.exists(os.path.join(os.getcwd(), backup_dir, angl_fname)):
+    args.A3_star_orientation = np.loadtxt( ang_path ).tolist()
+    logging.info("Orientation of A3-star lattice loaded from backup data")
+    
+A3_star_rotation._set_A3Star_orientation(args, coord_utils, bndry_utils,  randpts_utils, metric)
+
+if not os.path.exists(os.path.join(os.getcwd(), backup_dir, angl_fname)):
+    np.savetxt( ang_path, coord_utils._A3StarAng )
+
+    
+if args.enable_exact_match is True:
+    logging.info("Setting up the inclusion of exact match to find valid templates")
+    exact_match_utils = bankMisc.ExactMatchUtilsToFindValidNeighbors(args, ASD, coord_utils, bndry_utils, metric)
+    
+
+if os.path.exists(os.path.join(os.getcwd(), backup_dir, tlist_fname)) and \
+        os.path.exists(os.path.join(os.getcwd(), backup_dir, mlist_fname)):
+    
+    logging.info("Loading the backup data of tList, mList, rList")
+    
+    _dir = backup_dir + '/%s' 
+    tList = np.load(_dir%tlist_fname).tolist()
+    mList = list( np.load(_dir%mlist_fname) )
+    
+    # Load variables of running indices
+    ind, ind_start = np.loadtxt(_dir%run_index_fname).astype(int)
+    
+else:
+    # Structure of each element of template list
+    #   0        1       2       3      4     5       6                7                     8
+    # theta0  theta3  theta3s  mtotal  eta  spin1z  spin2z  optimize_starting_freq   template_duration  
+
+    # Initialize containers for template list and metric 
+    tList = [bankMisc.set_starting_position(args, None, coord_utils)]
+    Pgamma = metric.MetricInTheta0Theta3Theta3s(tList[-1], mis_match=max_mismatch)[0]
+    mList = [Pgamma]
+
+
+    # Initialize the seed banks
+    for seed_file in args.bank_seed:
+        logging.info( "Initializing the template bank to seed with %s precomputed templates." % str(len(tList)-1) )
+
+        # Add templates to bank
+        if seed_file.endswith(('.xml', '.xml.gz')):
+            tmpdoc = ligolw_utils.load_filename(seed_file, contenthandler=DefaultContentHandler)
+
+            # Get sngl_inspiral table
+            sngl_table = lsctables.SnglInspiralTable.get_table(tmpdoc)
+            mass_spin_vals = [[sngl.mass1, sngl.mass2, sngl.spin1z, sngl.spin2z] for sngl in sngl_table]
+
+            tmpdoc.unlink()
+            del sngl_table, tmpdoc
+
+        elif seed_file.endswith(('.hdf', '.h5', '.hdf5')):
+            hdf_fp = h5py.File(seed_file, 'r')
+            mass_spin_vals = np.vstack((hdf_fp["mass1"][:], hdf_fp["mass2"][:], \
+                                  hdf_fp["spin1z"][:], hdf_fp["spin2z"][:])).T.tolist()
+            hdf_fp.close()
+
+        for i in range(len(mass_spin_vals)):  
+            mass1, mass2, spin1z, spin2z = mass_spin_vals[i]
+            
+            mtotal, eta = bankMisc.mass1_mass2_to_mtotal_eta(mass1, mass2)
+
+            theta0, theta3, theta3s = coord_utils._compute_dimensionless_chirptimes_from_mass_spin(mass1, mass2, spin1z, spin2z)
+            template = [theta0, theta3, theta3s]
+
+            # Calculate template duration and optimized starting frequency
+            if args.optimize_flow != None:
+                opt_flow = coord_utils._compute_optimize_flow(mass1, mass2, spin1z, spin2z)
+            else:
+                opt_flow = args.flow
+
+            if args.min_duration != None:
+                dur = coord_utils._compute_dur(mass1, mass2, spin1z, spin2z, opt_flow)
+            else:
+                dur = 0.0
+
+            template.extend([mtotal, eta, spin1z, spin2z, opt_flow, dur])
+            tList.append(template)
+
+            # Calculate reduced spin parameter
+            chi_r = coord_utils._compute_chired_from_eta_chi(mass1, mass2, spin1z, spin2z)
+
+            # Calculate single spin: Asuuming either spin1z=spin2z for BBH or spin2z=0 for BHNS system.
+            s1z, s2z = coord_utils._compute_spin_from_chired_eta(mass1, mass2, eta, chi_r)
+            template[5], template[6] = s1z, s2z
+            if s1z > args.max_bh_spin:
+                template[5] = args.max_bh_spin
+            elif s1z < args.min_bh_spin:
+                template[5] = args.min_bh_spin
+
+            Pgamma = metric.MetricInTheta0Theta3Theta3s(template, mis_match=max_mismatch)[0]
+
+            if mass1 < args.nsbh_boundary_mass:
+                template[5], template[6] = spin1z, spin2z
+            mList.append(Pgamma)
+
+    # Intialize variables of running indices
+    ind, ind_start = 0, 0
+
+    
+# Sorted the templates list along theta0
+tmp_array = np.array(tList)
+sort_ind = tmp_array[:,0].argsort()
+
+# Initialize sorted template list (on theta0), corresponding theta0 list and metric list
+std_tList = tmp_array[sort_ind].tolist()
+std_theta0_list = tmp_array[sort_ind][:,0].tolist()
+std_mList = np.array(mList)[sort_ind].tolist()
+    
+
+logging.info("Initializing rList handler")
+np.random.mtrand.seed(args.random_seed)
+if os.path.exists(os.path.join(os.getcwd(), backup_dir, rlist_fname)):
+    rList = np.load(_dir%rlist_fname)
+else:
+    rList = np.array(randpts_utils.GenrandomPointsOverTheta0Theta3Theta3S(args, coord_utils))
+    rList = rList[rList[:,0].argsort()]
+np.random.mtrand.seed(args.random_seed)
+
+if args.enable_exact_match is True:
+    rList_deleter = randpts_utils.ExactMatchUtilsToDeleteRandomPoints(args, exact_match_utils, coord_utils, rList)
+else:
+    rList_deleter = randpts_utils.DeleteRandomPoints(args.flow, rList, neighbourhood_size=args.neighborhood_size)
+checkpoint_data(backup_dir)
+del rList
+
+logging.info("Generating the hybrid bank")
+
+while len(rList_deleter._rList) > 1:
+    
+    # Geometric part
+    while len(tList) > ind :
+        # Step1: Calculate A3-star neighbors using metric
+        A3star_neighbors = bankMisc.A3_star_lattice_neighbor(np.array(tList[ind]), mList[ind], coord_utils._neighbors_pos)
+        
+        # Step2: Check boundary condition
+        possible_neighbors = bndry_utils.pts_inside_bndry(A3star_neighbors, coord_utils)
+        
+        # Step3: Find the valid neighbors from the possible neighbors
+        # by caluclating the match against the existing template bank.
+        
+        if args.enable_exact_match is True:
+            # Compute the matches using exact match function
+            
+            valid_neighbors = exact_match_utils._find_valid_neighbors_from_possible_neighbors( \
+                  possible_neighbors, std_tList, std_theta0_list, std_mList, norm_dsq=0.95)
+            
+            for valid_neighbor in valid_neighbors:
+                neighbor, Pgamma, _ = valid_neighbor
+                tList.append(neighbor)
+                mList.append(Pgamma)  
+                std_tList, std_theta0_list, std_mList = bankMisc.insert_proposal(\
+                std_tList, std_theta0_list, neighbor, metric_list=std_mList, gamma_proposal=Pgamma)
+            
+            
+                
+            if len(tList) - ind_start > 1000:
+                print( len(tList) )
+                tmp_tList = np.array(tList[ind_start:])
+                tmp_mList = np.array(mList[ind_start:])
+                index = tmp_tList[:,0].argsort()
+                rList_deleter._main_delete_function(tmp_tList[index], tmp_mList[index])
+                
+                ind_start = len(tList) 
+                checkpoint_data(backup_dir)   
+                
+            else: pass
+            
+        else:
+            # Compute the matches using the metric of the template.
+            
+            for neighbor in possible_neighbors:
+                
+                # Insert neighbor in template bank if far from existant templates 
+                if bankMisc.find_neighbors_distance(std_tList, std_theta0_list, std_mList,\
+                                            neighbor, nhood_size_theta0) == True:
+                
+                    mass1, mass2 = mtotal_eta_to_mass1_mass2(neighbor[3], neighbor[4])
+                    opt_flow, dur = bndry_utils._verify_dur_optimize_flow(mass1, mass2, neighbor[5], neighbor[6], coord_utils)
+                
+                    if dur is not False:
+                        neighbor.extend([opt_flow, dur])
+                    
+                        # calculate metric of the accepted neighbor
+                        Pgamma =  metric.MetricInTheta0Theta3Theta3s(neighbor, mis_match=max_mismatch)[0]
+                
+                        tList.append(neighbor)
+                        mList.append(Pgamma)  
+                        std_tList, std_theta0_list, std_mList = bankMisc.insert_proposal(\
+                             std_tList, std_theta0_list, neighbor, metric_list=std_mList, gamma_proposal=Pgamma)
+                    else: pass
+                    
+        pstring = "Length of rList: %d, Length of tList: %d, Running index: %d, Valid lattice neighbours: %d"
+        pstring = pstring%(len(rList_deleter._rList), len(tList), ind, len(possible_neighbors))
+        print(  pstring )
+        
+        ind += 1
+    
+     
+    # Step4: Delete random points which are within sqrt(1-min_match) distace from templates
+    
+    if not args.enable_exact_match:
+        # Shrot the templates along theta0 which are generated from the last geometric iteration
+        tmp_tList = np.array(tList[ind_start:])
+        tmp_mList = np.array(mList[ind_start:])
+        index = tmp_tList[:,0].argsort()
+        rList_deleter._main_delete_function(tmp_tList[index], tmp_mList[index])
+        ind_start = ind
+        
+    
+    
+    # Step5 : Restart the geometric process by seeding a random proposal
+    local_index = 0
+    while local_index==0 and len(rList_deleter._rList) > 0:
+        
+        next_seed_index = np.random.randint(len(rList_deleter._rList))
+        next_seed = bndry_utils.pts_inside_bndry(np.array([\
+                                 rList_deleter._rList[next_seed_index]]), coord_utils)
+        #print(next_seed_index)
+        
+        if args.enable_exact_match is True and len(next_seed) != 0:
+            # Check the seed is sufficiently far from the existing
+            # templates in the bank.
+            valid_seed = exact_match_utils._find_valid_neighbors_from_possible_neighbors( \
+                  next_seed, std_tList, std_theta0_list, std_mList, norm_dsq=0.95)
+            
+            if len(valid_seed) != 0:
+                _valid_seed, Pgamma, _ = valid_seed[0]
+                next_seed = [_valid_seed]          
+                
+            else: next_seed = []
+                
+                
+        if len(next_seed) != 0:
+            
+            # Initialize seed for Geometric placement
+            tList.append(next_seed[0])
+            
+            if args.enable_exact_match is False:
+                # calculate metric of the next seed
+                Pgamma =  metric.MetricInTheta0Theta3Theta3s(tList[-1], mis_match=max_mismatch)[0]
+            
+            mList.append(Pgamma)  
+            std_tList, std_theta0_list, std_mList  = \
+                    bankMisc.insert_proposal(std_tList, std_theta0_list, next_seed[0],\
+                                             metric_list=std_mList, gamma_proposal=Pgamma)
+            
+            local_index += 1
+        
+        rList_deleter._rList = np.delete(rList_deleter._rList, next_seed_index, axis=0)
+        rList_deleter._rList_theta0 = np.delete(rList_deleter._rList_theta0, next_seed_index, axis=0).tolist()
+        
+    
+
+
+logging.info("Writing output")
+
+bankMisc.output_sngl_inspiral_table(args, tList, mList, coord_utils,
+                                   programName=__program__, version=__version__, proc_start_time=proc_start_time)
+logging.info("Final bank size: %d" % len(std_tList))
+logging.info("Done")
+
+
