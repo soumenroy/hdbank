@@ -1,11 +1,13 @@
-git clone https://github.com/soumenroy/hdbank.git
+#!/bin/bash
 
 git clone https://git.ligo.org/lscsoft/lalsuite.git
+cp modify.patch lalsuite
 cd lalsuite
 git checkout lalsuite-v7.3
-wget https://raw.githubusercontent.com/soumenroy/hdbank/main/patch/modify.patch
+
 git apply modify.patch
 conda env create --name hdb -f conda/environment.yml
+eval "$(conda shell.bash hook)"
 conda activate hdb
 ./00boot
 ./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal --enable-lalsimulation
