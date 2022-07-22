@@ -10,7 +10,7 @@ conda env create --name hdb -f conda/environment.yml
 eval "$(conda shell.bash hook)"
 conda activate hdb
 ./00boot
-./configure --prefix=$CONDA_PREFIX --enable-swig-python --enable-lalsimulation --enable-lalinspiral
+./configure --prefix=$CONDA_PREFIX --disable-all-lal  --enable-lalsimulation --enable-lalinspiral --enable-lalframe --enable-lalmetaio --enable-lalburst
 make -j 4 && make install
 
 cd ..
