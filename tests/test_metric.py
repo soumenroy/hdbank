@@ -1,6 +1,6 @@
 import numpy as np
 import lalsimulation
-from .. import metric
+from hdbank import metric
 
 def get_lalsim_psd_list():
     """
