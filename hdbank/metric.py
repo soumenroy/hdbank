@@ -144,6 +144,17 @@ class ComputeNumericalMetric(object):
             amp_phs = lalsim.SimIMRSEOBNRv4ROMAmpPhs(self._phi0, 
                                  self._df, self._flow, self._fhigh, self._fref, self._distance, 0.0, \
                                  mass1 * MSUN_SI, mass2 * MSUN_SI, spin1z, spin2z, -1, None, lalsim.NoNRT_V)
+            
+        elif self._approximant == 'IMRPhenomXAS':
+            amp_phs = lalsim.SimIMRPhenomXASGenerateFDAmpPhs(mass1 * MSUN_SI, mass2 * MSUN_SI, spin1z, spin2z, \
+                                 self._distance, self._flow, self._fhigh, self._df, self._phi0, self._fref, None)
+            
+            
+        
+        elif self._approximant == 'TaylorF2':
+            amp_phs = lalsim.SimInspiralTaylorF2AmpPhs(self._phi0, self._df, mass1 * MSUN_SI, mass2 * MSUN_SI, spin1z, spin2z, \
+                                 self._flow, self._fhigh, self._fref, self._distance, None)
+            
         else: 
             raise ValueError("Numerical metric not available for given approximant.")
     
@@ -181,36 +192,36 @@ class ComputeNumericalMetric(object):
         if eta<0.2495 and abs(chi)<0.9995 and eta > 0.0105:
         
             amp_plus, phs_plus= self._amplitude_phase(mtotal+delta_mtotal, eta+delta_eta, chi+delta_chi, chi+delta_chi)
-            amp_plus = amp_plus.data.data.real[self._ind_min:self._ind_max]
-            phs_plus = phs_plus.data.data.real[self._ind_min:self._ind_max]
+            amp_plus = amp_plus.data.data[self._ind_min:self._ind_max]
+            phs_plus = phs_plus.data.data[self._ind_min:self._ind_max]
 
             amp_minus, phs_minus = self._amplitude_phase(mtotal-delta_mtotal, eta-delta_eta, chi-delta_chi, chi-delta_chi)
-            amp_minus = amp_minus.data.data.real[self._ind_min:self._ind_max]
-            phs_minus = phs_minus.data.data.real[self._ind_min:self._ind_max]
+            amp_minus = amp_minus.data.data[self._ind_min:self._ind_max]
+            phs_minus = phs_minus.data.data[self._ind_min:self._ind_max]
             
             diff_amp = (amp_plus - amp_minus)/(2*self._delta_param)
             diff_phs = (phs_plus - phs_minus)/(2*self._delta_param)
         
         elif eta > 0.0105:
             amp, phs = self._amplitude_phase(mtotal, eta, chi, chi)
-            amp = amp.data.data.real[self._ind_min:self._ind_max]
-            phs = phs.data.data.real[self._ind_min:self._ind_max]
+            amp = amp.data.data[self._ind_min:self._ind_max]
+            phs = phs.data.data[self._ind_min:self._ind_max]
         
             amp_minus, phs_minus = self._amplitude_phase(mtotal-delta_mtotal, eta-delta_eta, chi-delta_chi, chi-delta_chi)
-            amp_minus = amp_minus.data.data.real[self._ind_min:self._ind_max]
-            phs_minus = phs_minus.data.data.real[self._ind_min:self._ind_max]
+            amp_minus = amp_minus.data.data[self._ind_min:self._ind_max]
+            phs_minus = phs_minus.data.data[self._ind_min:self._ind_max]
         
             diff_amp = (amp - amp_minus)/self._delta_param
             diff_phs = (phs - phs_minus)/self._delta_param
         
         else:
             amp_plus, phs_plus = self._amplitude_phase(mtotal+delta_mtotal, eta+delta_eta, chi+delta_chi, chi+delta_chi)
-            amp_plus = amp_plus.data.data.real[self._ind_min:self._ind_max]
-            phs_plus = phs_plus.data.data.real[self._ind_min:self._ind_max]
+            amp_plus = amp_plus.data.data[self._ind_min:self._ind_max]
+            phs_plus = phs_plus.data.data[self._ind_min:self._ind_max]
         
             amp, phs = self._amplitude_phase(mtotal, eta, chi, chi)
-            amp = amp.data.data.real[self._ind_min:self._ind_max]
-            phs = phs.data.data.real[self._ind_min:self._ind_max]
+            amp = amp.data.data[self._ind_min:self._ind_max]
+            phs = phs.data.data[self._ind_min:self._ind_max]
         
             diff_amp = (amp_plus - amp)/self._delta_param
             diff_phs = (phs_plus - phs)/self._delta_param
@@ -243,7 +254,7 @@ class ComputeNumericalMetric(object):
         gamma : matrix of order 5x5
             Fischer information matrix. 
         """
-        amp = self._amplitude_phase(mtotal, eta, chi, chi)[0].data.data.real[self._ind_min:self._ind_max]
+        amp = self._amplitude_phase(mtotal, eta, chi, chi)[0].data.data[self._ind_min:self._ind_max]
         amp_by_ASD = amp/self._ASD[self._ind_min:self._ind_max]
         
         # Compute the derivatives of amplitude and phase w.r.t mtotal, eta, chi, t0 and phi0.
@@ -577,6 +588,8 @@ class ObtainAnalyticalMetric(object):
 waveform_dict = {
                 "SEOBNRv4_ROM" : ComputeNumericalMetric,
                 "IMRPhenomD" : ComputeNumericalMetric,
+                "IMRPhenomXAS" : ComputeNumericalMetric,
+                "TaylorF2" : ComputeNumericalMetric,
                 "IMRPhenomB" : ObtainAnalyticalMetric,
                 "TaylorF2RedSpin" : ObtainAnalyticalMetric
                 }

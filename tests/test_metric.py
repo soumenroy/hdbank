@@ -32,7 +32,6 @@ fref = 20.0
 fhigh = 1024.0
 df = 0.1
 
-psd_name = "aLIGOZeroDetHighPower"
 
 length = int(fhigh/df + 1)
 
@@ -41,5 +40,19 @@ psd[0] = np.inf
 ASD = np.sqrt(psd)
 
 
-gm = metric.ComputeNumericalIMRMetric(fref, flow, fhigh, df, ASD)
-print(gm.Theta0Theta3Theta3s(20.0, 0.2, 0.5) )
+params_dic = {'mtotal': 20.0, 'eta': 0.2, 'chi': 0.5}
+
+
+print('Metric on dimensionless coordinate system \n')
+print('Reference point at %s \n '%str(params_dic))
+gm = metric.ComputeNumericalIMRMetric(fref, flow, fhigh, df, ASD, approximant='SEOBNRv4_ROM')
+print('SEOBNRv4ROM \n', gm.Theta0Theta3Theta3s(**params_dic) )
+
+gm = metric.ComputeNumericalIMRMetric(fref, flow, fhigh, df, ASD, approximant='IMRPhenomD')
+print('IMRPhenomD \n', gm.Theta0Theta3Theta3s(**params_dic) )
+
+gm = metric.ComputeNumericalIMRMetric(fref, flow, fhigh, df, ASD, approximant='IMRPhenomXAS')
+print('IMRPhenomXAS \n', gm.Theta0Theta3Theta3s(**params_dic) )
+
+gm = metric.ComputeNumericalIMRMetric(fref, flow, fhigh, df, ASD, approximant='TaylorF2')
+print('TaylorF2 \n', gm.Theta0Theta3Theta3s(**params_dic) )

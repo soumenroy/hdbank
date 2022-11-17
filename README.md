@@ -29,13 +29,13 @@ sh install.sh
 ```
 git clone https://git.ligo.org/lscsoft/lalsuite.git
 cd lalsuite
-git checkout lalsuite-v7.3
+git checkout lalsuite-v7.11
 cp ../ modify.patch
 git apply modify.patch
 ```
 3. Create conda environment and install LALSuite 
 ```
-conda env create --name hdb -f conda/environment.yml
+conda env create --name hdb -f common/conda/environment.yml
 conda activate hdb
 ./00boot
 ./configure --prefix=$CONDA_PREFIX --enable-swig-python --disable-all-lal  --enable-lalsimulation --enable-lalinspiral --enable-lalframe --enable-lalmetaio --enable-lalburst

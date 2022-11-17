@@ -12,14 +12,14 @@ index 4cd3ebf00a..0127643c22 100644
      # draw constant component mass lines
      m1min, m1max = constraints['mass1']
 diff --git a/lalsimulation/lib/LALSimIMR.h b/lalsimulation/lib/LALSimIMR.h
-index 0681a16136..b92f3c9696 100644
+index 75e39d60fa..de98674c25 100644
 --- a/lalsimulation/lib/LALSimIMR.h
 +++ b/lalsimulation/lib/LALSimIMR.h
 @@ -149,6 +149,8 @@ int XLALSimIMRPhenomDFrequencySequence(COMPLEX16FrequencySeries **htilde, const
  double XLALIMRPhenomDGetPeakFreq(const REAL8 m1_in, const REAL8 m2_in, const REAL8 chi1_in, const REAL8 chi2_in);
  double XLALSimIMRPhenomDChirpTime(const REAL8 m1_in, const REAL8 m2_in, const REAL8 chi1_in, const REAL8 chi2_in, const REAL8 fHz);
  double XLALSimIMRPhenomDFinalSpin(const REAL8 m1_in, const REAL8 m2_in, const REAL8 chi1_in, const REAL8 chi2_in);
-+int XLALSimIMRPhenomDGenerateFDAmpPhs(COMPLEX16FrequencySeries **amplitude, COMPLEX16FrequencySeries **phase, const REAL8 phi0, const REAL8 fRef, const REAL8 deltaF, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 chi1, const REAL8 chi2, const REAL8 f_min, const REAL8 f_max, const REAL8 distance, LALDict *extraParams, NRTidal_version_type NRTidal_version);
++int XLALSimIMRPhenomDGenerateFDAmpPhs(REAL8FrequencySeries **wfamplitude, REAL8FrequencySeries **wfphase, const REAL8 phi0, const REAL8 fRef, const REAL8 deltaF, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 chi1, const REAL8 chi2, const REAL8 f_min, const REAL8 f_max, const REAL8 distance, LALDict *extraParams, NRTidal_version_type NRTidal_version);
 +
  
  int XLALSimIMRPhenomP(COMPLEX16FrequencySeries **hptilde, COMPLEX16FrequencySeries **hctilde, const REAL8 chi1_l, const REAL8 chi2_l, const REAL8 chip, const REAL8 thetaJ, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 distance, const REAL8 alpha0, const REAL8 phic, const REAL8 deltaF, const REAL8 f_min, const REAL8 f_max, const REAL8 f_ref, IMRPhenomP_version_type IMRPhenomP_version, NRTidal_version_type NRTidal_version, LALDict *extraParams);
@@ -28,15 +28,51 @@ index 0681a16136..b92f3c9696 100644
  /* in module LALSimIMRSEOBNRv4ROM.c */
  
  int XLALSimIMRSEOBNRv4ROM(struct tagCOMPLEX16FrequencySeries **hptilde, struct tagCOMPLEX16FrequencySeries **hctilde, REAL8 phiRef, REAL8 deltaF, REAL8 fLow, REAL8 fHigh, REAL8 fRef, REAL8 distance, REAL8 inclination, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2, INT4 nk_max, LALDict *LALparams, NRTidal_version_type NRTidal_version);
-+int XLALSimIMRSEOBNRv4ROMAmpPhs(struct tagCOMPLEX16FrequencySeries **hptilde, struct tagCOMPLEX16FrequencySeries **hctilde, REAL8 phiRef, REAL8 deltaF, REAL8 fLow, REAL8 fHigh, REAL8 fRef, REAL8 distance, REAL8 inclination, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2, INT4 nk_max, LALDict *LALparams, NRTidal_version_type NRTidal_version);
++int XLALSimIMRSEOBNRv4ROMAmpPhs(struct tagREAL8FrequencySeries **wfamplitude, struct tagREAL8FrequencySeries **wfphase, REAL8 phiRef, REAL8 deltaF, REAL8 fLow, REAL8 fHigh, REAL8 fRef, REAL8 distance, REAL8 inclination, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2, INT4 nk_max, LALDict *LALparams, NRTidal_version_type NRTidal_version);
  int XLALSimIMRSEOBNRv4ROMFrequencySequence(struct tagCOMPLEX16FrequencySeries **hptilde, struct tagCOMPLEX16FrequencySeries **hctilde, const REAL8Sequence *freqs, REAL8 phiRef, REAL8 fRef, REAL8 distance, REAL8 inclination, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2, INT4 nk_max, LALDict *LALparams, NRTidal_version_type NRTidal_version);
  int XLALSimIMRSEOBNRv4ROMTimeOfFrequency(REAL8 *t, REAL8 frequency, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2);
  int XLALSimIMRSEOBNRv4ROMFrequencyOfTime(REAL8 *frequency, REAL8 t, REAL8 m1SI, REAL8 m2SI, REAL8 chi1, REAL8 chi2);
+@@ -433,6 +436,35 @@ int XLALSimIMRPhenomXASFrequencySequence(
+   LALDict *lalParams
+ );
+ 
++int XLALSimIMRPhenomXASGenerateFDAmpPhs(REAL8FrequencySeries **wfamplitude,
++  REAL8FrequencySeries **wfphase,
++  REAL8 m1_SI,
++  REAL8 m2_SI,
++  REAL8 chi1L,
++  REAL8 chi2L,
++  REAL8 distance,
++  REAL8 f_min,
++  REAL8 f_max,
++  REAL8 deltaF,
++  REAL8 phiRef,
++  REAL8 fRef_In,
++  LALDict *lalParams
++);
++
++int XLALSimIMRPhenomXASFrequencySequenceAmpPhs(
++  REAL8FrequencySeries **wfamplitude,
++  REAL8FrequencySeries **wfphase,
++  const REAL8Sequence *freqs,
++  REAL8 m1_SI,
++  REAL8 m2_SI,
++  REAL8 chi1L,
++  REAL8 chi2L,
++  REAL8 distance,
++  REAL8 phiRef,
++  REAL8 fRef_In,
++  LALDict *lalParams
++);
++
+ int XLALSimIMRPhenomXPMSAAngles(
+  REAL8Sequence **alpha_of_f,        /**< [out] The azimuthal angle of L around J */
+  REAL8Sequence **gamma_of_f,        /**< [out] The third Euler angle describing L with respect to J. Fixed by minmal rotation condition. */
 diff --git a/lalsimulation/lib/LALSimIMRPhenomD.c b/lalsimulation/lib/LALSimIMRPhenomD.c
-index 0e6afffb29..587941d716 100644
+index 0e6afffb29..3e48e5fd86 100644
 --- a/lalsimulation/lib/LALSimIMRPhenomD.c
 +++ b/lalsimulation/lib/LALSimIMRPhenomD.c
-@@ -1070,3 +1070,449 @@ UNUSED REAL8 IMRPhenomDPhase_OneFrequency(
+@@ -1070,3 +1070,447 @@ UNUSED REAL8 IMRPhenomDPhase_OneFrequency(
                                &(pD.phi_prefactors), Rholm, Taulm);
    return phase;
  }
@@ -65,17 +101,14 @@ index 0e6afffb29..587941d716 100644
 +
 +
 +
-+
-+
-+
 +/*
 + * private function prototypes; all internal functions use solar masses.
 + *
 + */
 +
 +static int IMRPhenomDGenerateFDAmpPhs(
-+    COMPLEX16FrequencySeries **amplitude, /**< [out] FD amplitude */
-+    COMPLEX16FrequencySeries **phase,  /**< [out] FD phase */
++    REAL8FrequencySeries **wfamplitude, /**< [out] FD amplitude */
++    REAL8FrequencySeries **wfphase,  /**< [out] FD phase */
 +    const REAL8Sequence *freqs_in,     /**< Frequency points at which to evaluate the waveform (Hz) */
 +    double deltaF,                     /**< If deltaF > 0, the frequency points given in freqs are uniformly spaced with
 +                                        * spacing deltaF. Otherwise, the frequency points are spaced non-uniformly.
@@ -140,8 +173,8 @@ index 0e6afffb29..587941d716 100644
 + * frequency fLow and zeros beyond the cutoff frequency in the ringdown.
 + */
 +int XLALSimIMRPhenomDGenerateFDAmpPhs(
-+    COMPLEX16FrequencySeries **amplitude, /**< [out] FD amplitude */
-+    COMPLEX16FrequencySeries **phase,  /**< [out] FD phase */
++    REAL8FrequencySeries **wfamplitude, /**< [out] FD amplitude */
++    REAL8FrequencySeries **wfphase,  /**< [out] FD phase */
 +    const REAL8 phi0,                  /**< Orbital phase at fRef (rad) */
 +    const REAL8 fRef_in,               /**< reference frequency (Hz) */
 +    const REAL8 deltaF,                /**< Sampling frequency (Hz) */
@@ -160,10 +193,10 @@ index 0e6afffb29..587941d716 100644
 +  const REAL8 m2 = m2_SI / LAL_MSUN_SI;
 +
 +  /* check inputs for sanity */
-+  XLAL_CHECK(0 != amplitude, XLAL_EFAULT, "amplitude is null");
-+  if (*amplitude) XLAL_ERROR(XLAL_EFAULT);
-+  XLAL_CHECK(0 != phase, XLAL_EFAULT, "phase is null");
-+  if (*phase) XLAL_ERROR(XLAL_EFAULT);
++  XLAL_CHECK(0 != wfamplitude, XLAL_EFAULT, "wfamplitude is null");
++  if (*wfamplitude) XLAL_ERROR(XLAL_EFAULT);
++  XLAL_CHECK(0 != wfphase, XLAL_EFAULT, "phase is null");
++  if (*wfphase) XLAL_ERROR(XLAL_EFAULT);
 +  if (fRef_in < 0) XLAL_ERROR(XLAL_EDOM, "fRef_in must be positive (or 0 for 'ignore')\n");
 +  if (deltaF <= 0) XLAL_ERROR(XLAL_EDOM, "deltaF must be positive\n");
 +  if (m1 <= 0) XLAL_ERROR(XLAL_EDOM, "m1 must be positive\n");
@@ -203,7 +236,7 @@ index 0e6afffb29..587941d716 100644
 +  REAL8Sequence *freqs = XLALCreateREAL8Sequence(2);
 +  freqs->data[0] = f_min;
 +  freqs->data[1] = f_max_prime;
-+  int status = IMRPhenomDGenerateFDAmpPhs(amplitude, phase, freqs, deltaF, phi0, fRef,
++  int status = IMRPhenomDGenerateFDAmpPhs(wfamplitude, wfphase, freqs, deltaF, phi0, fRef,
 +                                    m1, m2, chi1, chi2,
 +                                    distance, extraParams, NRTidal_version);
 +  XLAL_CHECK(XLAL_SUCCESS == status, status, "Failed to generate IMRPhenomD waveform.");
@@ -213,11 +246,12 @@ index 0e6afffb29..587941d716 100644
 +    // The user has requested a higher f_max than Mf=fCut.
 +    // Resize the frequency series to fill with zeros beyond the cutoff frequency.
 +      
-+    size_t n = (*amplitude)->data->length;
++    size_t n = (*wfamplitude)->data->length;
 +    size_t n_full = NextPow2(f_max / deltaF) + 1; // we actually want to have the length be a power of 2 + 1
-+    *amplitude = XLALResizeCOMPLEX16FrequencySeries(*amplitude, 0, n_full);
-+    *phase = XLALResizeCOMPLEX16FrequencySeries(*phase, 0, n_full);
-+    XLAL_CHECK ( *amplitude, XLAL_ENOMEM, "Failed to resize waveform COMPLEX16FrequencySeries of length %zu (for internal fCut=%f) to new length %zu (for user-requested f_max=%f).", n, fCut, n_full, f_max );
++    *wfamplitude = XLALResizeREAL8FrequencySeries(*wfamplitude, 0, n_full);
++    *wfphase = XLALResizeREAL8FrequencySeries(*wfphase, 0, n_full);
++    XLAL_CHECK ( *wfamplitude, XLAL_ENOMEM, "Failed to resize waveform COMPLEX16FrequencySeries of length %zu (for internal fCut=%f) to new length %zu (for user-requested f_max=%f).", n, fCut, n_full, f_max );
++    XLAL_CHECK ( *wfphase, XLAL_ENOMEM, "Failed to resize waveform COMPLEX16FrequencySeries of length %zu (for internal fCut=%f) to new length %zu (for user-requested f_max=%f).", n, fCut, n_full, f_max );
 +  }
 +
 +  return XLAL_SUCCESS;
@@ -236,8 +270,8 @@ index 0e6afffb29..587941d716 100644
 +/* *********************************************************************************/
 +
 +static int IMRPhenomDGenerateFDAmpPhs(
-+    COMPLEX16FrequencySeries **amplitude, /**< [out] FD amplitude */
-+    COMPLEX16FrequencySeries **phase,  /**< [out] FD phase */
++    REAL8FrequencySeries **wfamplitude, /**< [out] FD amplitude */
++    REAL8FrequencySeries **wfphase,  /**< [out] FD phase */
 +    const REAL8Sequence *freqs_in,     /**< Frequency points at which to evaluate the waveform (Hz) */
 +    double deltaF,                     /* If deltaF > 0, the frequency points given in freqs are uniformly spaced with
 +                                        * spacing deltaF. Otherwise, the frequency points are spaced non-uniformly.
@@ -324,10 +358,10 @@ index 0e6afffb29..587941d716 100644
 +    /* Coalesce at t=0 */
 +    // shift by overall length in time
 +    XLAL_CHECK ( XLALGPSAdd(&ligotimegps_zero, -1. / deltaF), XLAL_EFUNC, "Failed to shift coalescence time to t=0, tried to apply shift of -1.0/deltaF with deltaF=%g.", deltaF);
-+    *amplitude = XLALCreateCOMPLEX16FrequencySeries("amplitude: FD waveform", &ligotimegps_zero, 0.0, deltaF, &lalStrainUnit, npts);
-+    XLAL_CHECK ( *amplitude, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu for f_max=%f, deltaF=%g.", npts, f_max, deltaF);
-+    *phase = XLALCreateCOMPLEX16FrequencySeries("phase: FD waveform", &ligotimegps_zero, 0.0, deltaF, &lalStrainUnit, npts);
-+    XLAL_CHECK ( *phase, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu for f_max=%f, deltaF=%g.", npts, f_max, deltaF);
++    *wfamplitude = XLALCreateREAL8FrequencySeries("amplitude: FD waveform", &ligotimegps_zero, 0.0, deltaF, &lalStrainUnit, npts);
++    XLAL_CHECK ( *wfamplitude, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu for f_max=%f, deltaF=%g.", npts, f_max, deltaF);
++    *wfphase = XLALCreateREAL8FrequencySeries("phase: FD waveform", &ligotimegps_zero, 0.0, deltaF, &lalStrainUnit, npts);
++    XLAL_CHECK ( *wfphase, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu for f_max=%f, deltaF=%g.", npts, f_max, deltaF);
 +    // Recreate freqs using only the lower and upper bounds
 +    size_t iStart = (size_t) (f_min / deltaF);
 +    size_t iStop = (size_t) (f_max / deltaF);
@@ -340,10 +374,10 @@ index 0e6afffb29..587941d716 100644
 +    offset = iStart;
 +  } else { // freqs contains frequencies with non-uniform spacing; we start at lowest given frequency
 +    npts = freqs_in->length;
-+    *amplitude = XLALCreateCOMPLEX16FrequencySeries("amplitude: FD waveform", &ligotimegps_zero, f_min, deltaF, &lalStrainUnit, npts);
-+    XLAL_CHECK ( *amplitude, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu from sequence.", npts);
-+    *phase = XLALCreateCOMPLEX16FrequencySeries("phase: FD waveform", &ligotimegps_zero, f_min, deltaF, &lalStrainUnit, npts);
-+    XLAL_CHECK ( *phase, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu from sequence.", npts);
++    *wfamplitude = XLALCreateREAL8FrequencySeries("amplitude: FD waveform", &ligotimegps_zero, f_min, deltaF, &lalStrainUnit, npts);
++    XLAL_CHECK ( *wfamplitude, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu from sequence.", npts);
++    *wfphase = XLALCreateREAL8FrequencySeries("phase: FD waveform", &ligotimegps_zero, f_min, deltaF, &lalStrainUnit, npts);
++    XLAL_CHECK ( *wfphase, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu from sequence.", npts);
 +    offset = 0;
 +    freqs = XLALCreateREAL8Sequence(freqs_in->length);
 +    if (!freqs)
@@ -352,11 +386,11 @@ index 0e6afffb29..587941d716 100644
 +      freqs->data[i] = freqs_in->data[i];
 +  }
 +
-+  memset((*amplitude)->data->data, 0, npts * sizeof(COMPLEX16));
-+  XLALUnitMultiply(&((*amplitude)->sampleUnits), &((*amplitude)->sampleUnits), &lalSecondUnit);
++  memset((*wfamplitude)->data->data, 0, npts * sizeof(REAL8));
++  XLALUnitMultiply(&((*wfamplitude)->sampleUnits), &((*wfamplitude)->sampleUnits), &lalSecondUnit);
 +  
-+  memset((*phase)->data->data, 0, npts * sizeof(COMPLEX16));
-+  XLALUnitMultiply(&((*phase)->sampleUnits), &((*phase)->sampleUnits), &lalSecondUnit);
++  memset((*wfphase)->data->data, 0, npts * sizeof(REAL8));
++  XLALUnitMultiply(&((*wfphase)->sampleUnits), &((*wfphase)->sampleUnits), &lalSecondUnit);
 +
 +  // Calculate phenomenological parameters
 +  const REAL8 finspin = FinalSpin0815(eta, chi1, chi2); //FinalSpin0815 - 0815 is like a version number
@@ -440,8 +474,8 @@ index 0e6afffb29..587941d716 100644
 +        REAL8 phi = IMRPhenDPhase(Mf, pPhi, pn, &powers_of_f, &phi_prefactors, 1.0, 1.0);
 +
 +        phi -= t0*(Mf-MfRef) + phi_precalc;
-+        ((*amplitude)->data->data)[j] =  amp0 * (amp+2*sqrt(LAL_PI/5.)*ampT)  ;
-+        ((*phase)->data->data)[j] = phi ;
++        ((*wfamplitude)->data->data)[j] =  amp0 * (amp+2*sqrt(LAL_PI/5.)*ampT)  ;
++        ((*wfphase)->data->data)[j] = phi ;
 +      }
 +    }
 +  } else {
@@ -462,8 +496,8 @@ index 0e6afffb29..587941d716 100644
 +        REAL8 phi = IMRPhenDPhase(Mf, pPhi, pn, &powers_of_f, &phi_prefactors, 1.0, 1.0);
 +        
 +        phi -= t0*(Mf-MfRef) + phi_precalc;
-+        ((*amplitude)->data->data)[j] = amp0 * amp ;
-+        ((*phase)->data->data)[j] = phi ;
++        ((*wfamplitude)->data->data)[j] = amp0 * amp ;
++        ((*wfphase)->data->data)[j] = phi ;
 +      }
 +    }
 +  }
@@ -486,8 +520,597 @@ index 0e6afffb29..587941d716 100644
 +  return status;
 +}
 +
+diff --git a/lalsimulation/lib/LALSimIMRPhenomX.c b/lalsimulation/lib/LALSimIMRPhenomX.c
+index 81333ef8c4..26eeafca5b 100644
+--- a/lalsimulation/lib/LALSimIMRPhenomX.c
++++ b/lalsimulation/lib/LALSimIMRPhenomX.c
+@@ -1832,3 +1832,565 @@ int IMRPhenomXPGenerateFD(
+ 
+   return status;
+ }
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++/************ Soumen's modification ********************/
++
++
++/**
++ *  Driver routine to calculate an IMRPhenomX aligned-spin,
++ *  inspiral-merger-ringdown phenomenological waveform model
++ *  in the frequency domain.
++ *
++ *  arXiv:2001.11412, https://arxiv.org/abs/2001.11412
++ *
++ *  All input parameters should be in SI units. Angles should be in radians.
++ *
++ *  XLALSimIMRPhenomXASGenerateFD() returns the strain of the 2-2 mode as a complex
++ * frequency series with equal spacing deltaF and contains zeros from zero frequency
++ * to the starting frequency and zeros beyond the cutoff frequency in the ringdown.
++ *
++ */
++int XLALSimIMRPhenomXASGenerateFDAmpPhs(
++  REAL8FrequencySeries **wfamplitude,  /**< [out] FD waveform */
++  REAL8FrequencySeries **wfphase,      /**< [out] FD waveform */
++  REAL8 m1_SI,                         /**< Mass of companion 1 (kg) */
++  REAL8 m2_SI,                         /**< Mass of companion 2 (kg) */
++  REAL8 chi1L,                         /**< Dimensionless aligned spin of companion 1 */
++  REAL8 chi2L,                         /**< Dimensionless aligned spin of companion 2 */
++  REAL8 distance,                      /**< Luminosity distance (m) */
++  REAL8 f_min,                         /**< Starting GW frequency (Hz) */
++  REAL8 f_max,                         /**< End frequency; 0 defaults to Mf = 0.3 */
++  REAL8 deltaF,                        /**< Sampling frequency (Hz) */
++  REAL8 phi0,                          /**< Orbital phase at fRef (rad) */
++  REAL8 fRef_In,                       /**< Reference frequency (Hz) */
++  LALDict *lalParams                   /**< LAL Dictionary */
++)
++{
++  UINT4 status;
++
++  /* Set debug status here */
++  UINT4 debug = PHENOMXDEBUG;
++
++  if(debug)
++  {
++    printf("fRef_In : %e\n",fRef_In);
++    printf("m1_SI   : %e\n",m1_SI);
++    printf("m2_SI   : %e\n",m2_SI);
++    printf("chi1L   : %e\n",chi1L);
++    printf("chi2L   : %e\n\n",chi2L);
++    printf("Performing sanity checks...\n");
++  }
++
++  /* Perform initial sanity checks */
++  if(*wfamplitude)       { XLAL_CHECK(NULL != wfamplitude, XLAL_EFAULT);                                }
++  if(*wfphase)       { XLAL_CHECK(NULL != wfphase, XLAL_EFAULT);                                    }
++  if(fRef_In  <  0.0) { XLAL_ERROR(XLAL_EDOM, "fRef_In must be positive or set to 0 to ignore.\n");  }
++  if(deltaF   <= 0.0) { XLAL_ERROR(XLAL_EDOM, "deltaF must be positive.\n");                         }
++  if(m1_SI    <= 0.0) { XLAL_ERROR(XLAL_EDOM, "m1 must be positive.\n");                             }
++  if(m2_SI    <= 0.0) { XLAL_ERROR(XLAL_EDOM, "m2 must be positive.\n");                             }
++  if(f_min    <= 0.0) { XLAL_ERROR(XLAL_EDOM, "f_min must be positive.\n");                          }
++  if(f_max    <  0.0) { XLAL_ERROR(XLAL_EDOM, "f_max must be non-negative.\n");                      }
++  if(distance <  0.0) { XLAL_ERROR(XLAL_EDOM, "Distance must be positive and greater than 0.\n");    }
++
++  /*
++  	Perform a basic sanity check on the region of the parameter space in which model is evaluated. Behaviour is as follows:
++  		- For mass ratios <= 20.0 and spins <= 0.99: no warning messages.
++  		- For 1000 > mass ratio > 20 and spins <= 0.99: print a warning message that we are extrapolating outside of *NR* calibration domain.
++  		- For mass ratios > 1000: throw a hard error that model is not valid.
++  		- For spins > 0.99: throw a warning that we are extrapolating the model to extremal
++
++  */
++  REAL8 mass_ratio;
++  if(m1_SI > m2_SI)
++  {
++	  mass_ratio = m1_SI / m2_SI;
++  }
++  else
++  {
++	  mass_ratio = m2_SI / m1_SI;
++  }
++  if(mass_ratio > 20.0  ) { XLAL_PRINT_INFO("Warning: Extrapolating outside of Numerical Relativity calibration domain."); }
++  if(mass_ratio > 1000. && fabs(mass_ratio - 1000) > 1e-12) { XLAL_ERROR(XLAL_EDOM, "ERROR: Model not valid at mass ratios beyond 1000."); } // The 1e-12 is to avoid rounding errors
++  if(fabs(chi1L) > 0.99 || fabs(chi2L) > 0.99) { XLAL_PRINT_INFO("Warning: Extrapolating to extremal spins, model is not trusted."); }
++
++  /* If no reference frequency is given, set it to the starting gravitational wave frequency */
++  REAL8 fRef = (fRef_In == 0.0) ? f_min : fRef_In;
++
++
++  if(debug)
++  {
++    printf("\n\n **** Initializing waveform struct... **** \n\n");
++  }
++
++
++  /* Initialize the useful powers of LAL_PI */
++  status = IMRPhenomX_Initialize_Powers(&powers_of_lalpi, LAL_PI);
++  XLAL_CHECK(XLAL_SUCCESS == status, status, "Failed to initialize useful powers of LAL_PI.");
++
++  /* Initialize IMR PhenomX Waveform struct and check that it initialized correctly */
++  IMRPhenomXWaveformStruct *pWF;
++  pWF    = XLALMalloc(sizeof(IMRPhenomXWaveformStruct));
++  status = IMRPhenomXSetWaveformVariables(pWF, m1_SI, m2_SI, chi1L, chi2L, deltaF, fRef, phi0, f_min, f_max, distance, 0.0, lalParams, debug);
++  XLAL_CHECK(XLAL_SUCCESS == status, XLAL_EFUNC, "Error: IMRPhenomXSetWaveformVariables failed.\n");
++
++  /*
++      Create a REAL8 frequency series.
++      Use fLow, fHigh, deltaF to compute frequency sequence. Only pass the boundaries (fMin, fMax).
++  */
++  REAL8Sequence *freqs = XLALCreateREAL8Sequence(2);
++  freqs->data[0] = pWF->fMin;
++  freqs->data[1] = pWF->f_max_prime;
++
++
++  if(debug)
++  {
++    printf("\n\n **** Calling IMRPhenomXASGenerateFD... **** \n\n");
++  }
++
++  /* We now call the core IMRPhenomXAS waveform generator */
++  status = IMRPhenomXASGenerateFDAmpPhs(wfamplitude, wfphase, freqs, pWF, lalParams);
++  XLAL_CHECK(status == XLAL_SUCCESS, XLAL_EFUNC, "IMRPhenomXASFDCore failed to generate IMRPhenomX waveform.");
++
++  if(debug)
++  {
++    printf("\n\n **** Call to IMRPhenomXASGenerateFD complete. **** \n\n");
++  }
++
++  /*
++      We now resize htilde22 if our waveform was generated to a cut-off frequency below
++      the desired maximum frequency. Simply fill the remaining frequencies with zeros.
++  */
++  REAL8 lastfreq;
++  if (pWF->f_max_prime < pWF->fMax)
++  {
++    /*
++        As the user has requested an f_max > Mf = fCut,
++        we resize the frequency series to fill with zeros beyond the cutoff frequency.
++    */
++    lastfreq = pWF->fMax;
++  }
++  else{  // We have to look for a power of 2 anyway.
++    lastfreq = pWF->f_max_prime;
++  }
++  /* Enforce length to be a power of 2 + 1 */
++  size_t n_full = NextPow2(lastfreq / pWF->deltaF) + 1;
++  size_t n = (*wfamplitude)->data->length;
++
++  /* Resize the REAL8 frequency series */
++  *wfamplitude = XLALResizeREAL8FrequencySeries(*wfamplitude, 0, n_full);
++  *wfphase = XLALResizeREAL8FrequencySeries(*wfphase, 0, n_full);
++  XLAL_CHECK (*wfamplitude, XLAL_ENOMEM, "Failed to resize waveform COMPLEX16FrequencySeries of length %zu (for internal fCut=%f) to new length %zu (for user-requested f_max=%f).", n, pWF->fCut, n_full, pWF->fMax );
++
++
++  LALFree(pWF);
++  XLALDestroyREAL8Sequence(freqs);
++  return XLAL_SUCCESS;
++}
++
++
++/**
++ * Compute waveform in LAL format at specified frequencies for the IMRPhenomX model.
++ *
++ *  All input parameters should be in SI units. Angles should be in radians.
++ *
++ * XLALSimIMRPhenomXASFrequencySequence() returns the strain of the 2-2 mode as a
++ * complex frequency series with entries exactly at the frequencies specified in
++ * the sequence freqs (which can be unequally spaced). No zeros are added. Assumes positive frequencies.
++ */
++ int XLALSimIMRPhenomXASFrequencySequenceAmpPhs(
++     REAL8FrequencySeries **wfamplitude, /**< [out] FD waveform */
++     REAL8FrequencySeries **wfphase, /**< [out] FD waveform */
++     const REAL8Sequence *freqs,          /**< [out] Frequency series [Hz] */
++     REAL8 m1_SI,                         /**< Mass of companion 1 (kg) */
++     REAL8 m2_SI,                         /**< Mass of companion 2 (kg) */
++     REAL8 chi1L,                         /**< Dimensionless aligned spin of companion 1 */
++     REAL8 chi2L,                         /**< Dimensionless aligned spin of companion 2 */
++     REAL8 distance,                      /**< Luminosity distance (m) */
++     REAL8 phi0,                          /**< Phase at reference frequency */
++     REAL8 fRef_In,                       /**< Reference frequency (Hz) */
++     LALDict *lalParams                   /**< LAL Dictionary */
++ )
++ {
++   INT4 return_code = 0;
++
++   /* Sanity checks */
++   if(*wfamplitude)       { XLAL_CHECK(NULL != wfamplitude, XLAL_EFAULT);                                   }
++   if(*wfphase)       { XLAL_CHECK(NULL != wfphase, XLAL_EFAULT);                                 }
++   if(fRef_In  <  0.0) { XLAL_ERROR(XLAL_EDOM, "fRef_In must be positive or set to 0 to ignore.\n");  }
++   if(m1_SI    <= 0.0) { XLAL_ERROR(XLAL_EDOM, "m1 must be positive.\n");                             }
++   if(m2_SI    <= 0.0) { XLAL_ERROR(XLAL_EDOM, "m2 must be positive.\n");                             }
++   if(distance <  0.0) { XLAL_ERROR(XLAL_EDOM, "Distance must be positive and greater than 0.\n");    }
++
++   /*
++	Perform a basic sanity check on the region of the parameter space in which model is evaluated. Behaviour is as follows:
++		- For mass ratios <= 20.0 and spins <= 0.99: no warning messages.
++		- For 1000 > mass ratio > 20 and spins <= 0.99: print a warning message that we are extrapolating outside of *NR* calibration domain.
++		- For mass ratios > 1000: throw a hard error that model is not valid.
++		- For spins > 0.99: throw a warning that we are extrapolating the model to extremal
++
++   */
++   REAL8 mass_ratio;
++   if(m1_SI > m2_SI)
++   {
++	mass_ratio = m1_SI / m2_SI;
++   }
++   else
++   {
++	mass_ratio = m2_SI / m1_SI;
++   }
++   if(mass_ratio > 20.0  ) { XLAL_PRINT_INFO("Warning: Extrapolating outside of Numerical Relativity calibration domain."); }
++
++   // Check on the mass-ratio with a 1e-12 tolerance to avoid rounding errors
++   if(mass_ratio > 1000. && fabs(mass_ratio - 1000) > 1e-12) { XLAL_ERROR(XLAL_EDOM, "ERROR: Model not valid at mass ratios beyond 1000."); }
++   if(fabs(chi1L) > 0.99 || fabs(chi2L) > 0.99) { XLAL_PRINT_INFO("Warning: Extrapolating to extremal spins, model is not trusted."); }
++
++   // If fRef is not provided, then set fRef to be the starting GW Frequency
++   REAL8 fRef = (fRef_In == 0.0) ? freqs->data[0] : fRef_In;
++
++   UINT4 status = IMRPhenomX_Initialize_Powers(&powers_of_lalpi, LAL_PI);
++   XLAL_CHECK(XLAL_SUCCESS == status, status, "Failed to initialize useful powers of LAL_PI.");
++
++   /*
++      This routine automatically performs sanity checks on the masses, spins, etc.
++   */
++   REAL8 f_min_In  = freqs->data[0];
++   REAL8 f_max_In  = freqs->data[freqs->length - 1];
++
++   /*
++      Passing deltaF = 0 implies that freqs is a frequency grid with non-uniform spacing.
++      The function waveform then start at lowest given frequency.
++   */
++
++   /* Initialize IMRPhenomX waveform struct and perform sanity check. */
++   IMRPhenomXWaveformStruct *pWF;
++   pWF = XLALMalloc(sizeof(IMRPhenomXWaveformStruct));
++   return_code = IMRPhenomXSetWaveformVariables(pWF,m1_SI, m2_SI, chi1L, chi2L, 0.0, fRef, phi0, f_min_In, f_max_In, distance, 0.0, lalParams, 0);
++   XLAL_CHECK(XLAL_SUCCESS == return_code, XLAL_EFUNC, "Error: IMRPhenomXSetWaveformVariables failed.\n");
++
++   /* Now call the core IMRPhenomX waveform generator */
++   return_code = IMRPhenomXASGenerateFDAmpPhs(
++     wfamplitude,
++     wfphase,
++     freqs,
++     pWF,
++     lalParams
++   );
++   XLAL_CHECK(return_code == XLAL_SUCCESS, XLAL_EFUNC, "IMRPhenomXASFDCore failed to generate IMRPhenomX waveform.");
++   LALFree(pWF);
++
++   return XLAL_SUCCESS;
++ }
++
++ /** @} */
++ /** @} */
++
++
++ /* *********************************************************************************
++  *
++  * The following private function generates an IMRPhenomX frequency-domain waveform
++  *   - Only aligned-spin
++  *   - Only the 22-mode
++  *   - Physical parameters are passed via the waveform struct
++  * *********************************************************************************
++  */
++int IMRPhenomXASGenerateFDAmpPhs(
++  REAL8FrequencySeries **wfamplitude, /**< [out] FD waveform           */
++  REAL8FrequencySeries **wfphase, /**< [out] FD waveform           */
++  const REAL8Sequence *freqs_In,       /**< Input frequency grid        */
++  IMRPhenomXWaveformStruct *pWF,       /**< IMRPhenomX Waveform Struct  */
++  LALDict *lalParams                   /**< LAL Dictionary Structure    */
++)
++{
++  /* Inherits debug flag from waveform struct */
++  UINT4 debug = PHENOMXDEBUG;
++
++  if(debug)
++  {
++    printf("\n **** Now in IMRPhenomXASGenerateFD... **** \n");
++  }
++
++  /* Set LIGOTimeGPS */
++  LIGOTimeGPS ligotimegps_zero = LIGOTIMEGPSZERO; // = {0,0}
++
++  /* Initialize useful powers of LAL_PI */
++  int status = IMRPhenomX_Initialize_Powers(&powers_of_lalpi, LAL_PI);
++  XLAL_CHECK(XLAL_SUCCESS == status, status, "Failed to initialize useful powers of LAL_PI.");
++
++  /* Inherit minimum and maximum frequencies to generate wavefom from input frequency grid */
++  double f_min = freqs_In->data[0];
++  double f_max = freqs_In->data[freqs_In->length - 1];
++
++  /* Size of array */
++  size_t npts     = 0;
++
++  /* Index shift between freqs and the frequency series */
++  UINT4 offset    = 0;
++
++  /* Initialize frequency sequence */
++  REAL8Sequence *freqs = NULL;
++
++  /* If deltaF is non-zero then we need to generate a uniformly sampled frequency grid of spacing deltaF. Start at f = 0. */
++  if(pWF->deltaF > 0)
++  {
++    /* Return the closest power of 2 */
++    npts = (size_t) (f_max/pWF->deltaF) + 1;
++
++    /* Debug information */
++    if(debug)
++    {
++      printf("npts     = %zu\n",npts);
++      printf("fMin     = %.4f\n",f_min);
++      printf("fMax     = %.4f\n",f_max);
++      printf("dF       = %.4f\n",pWF->deltaF);
++    }
++
++    XLAL_CHECK(XLALGPSAdd(&ligotimegps_zero, -1. / pWF->deltaF ), XLAL_EFUNC, "Failed to shift the coalescence time to t=0. Tried to apply a shift of -1/df with df = %g.", pWF->deltaF);
++
++    /* Initialize the htilde frequency series */
++    *wfamplitude = XLALCreateREAL8FrequencySeries("htilde22: FD waveform",&ligotimegps_zero,0.0,pWF->deltaF,&lalStrainUnit,npts);
++
++    /* Check that frequency series generated okay */
++    XLAL_CHECK(*wfamplitude,XLAL_ENOMEM,"Failed to allocate COMPLEX16FrequencySeries of length %zu for f_max = %f, deltaF = %g.\n",npts,f_max,pWF->deltaF);
++      
++    /* Initialize the htilde frequency series */
++    *wfphase = XLALCreateREAL8FrequencySeries("htilde22: FD waveform",&ligotimegps_zero,0.0,pWF->deltaF,&lalStrainUnit,npts);
++
++    /* Check that frequency series generated okay */
++    XLAL_CHECK(*wfphase,XLAL_ENOMEM,"Failed to allocate COMPLEX16FrequencySeries of length %zu for f_max = %f, deltaF = %g.\n",npts,f_max,pWF->deltaF);
++
++    /* Frequencies will be set using only the lower and upper bounds that we passed */
++    size_t iStart = (size_t) (f_min / pWF->deltaF);
++    size_t iStop  = (size_t) (f_max / pWF->deltaF) + 1;
++
++    XLAL_CHECK ( (iStop <= npts) && (iStart <= iStop), XLAL_EDOM,
++          "minimum freq index %zu and maximum freq index %zu do not fulfill 0<=ind_min<=ind_max<=htilde->data>length=%zu.", iStart, iStop, npts);
++
++    /* Allocate memory for frequency array and terminate if this fails */
++    freqs = XLALCreateREAL8Sequence(iStop - iStart);
++    if (!freqs)
++    {
++      XLAL_ERROR(XLAL_EFUNC, "Frequency array allocation failed.");
++    }
++
++    /* Populate frequency array */
++    for (UINT4 i = iStart; i < iStop; i++)
++    {
++      freqs->data[i-iStart] = i * pWF->deltaF;
++    }
++    offset = iStart;
++  }
++  else
++  {
++    /* freqs is a frequency grid with non-uniform spacing, so we start at the lowest given frequency */
++    npts      = freqs_In->length;
++    *wfamplitude = XLALCreateREAL8FrequencySeries("htilde22: FD waveform, 22 mode", &ligotimegps_zero, f_min, pWF->deltaF, &lalStrainUnit, npts);
++
++    XLAL_CHECK (*wfamplitude, XLAL_ENOMEM, "Failed to allocated waveform COMPLEX16FrequencySeries of length %zu from sequence.", npts);
++
++    offset = 0;
++    freqs  = XLALCreateREAL8Sequence(freqs_In->length);
++
++    /* Allocate memory for frequency array and terminate if this fails */
++    if (!freqs)
++    {
++      XLAL_ERROR(XLAL_EFUNC, "Frequency array allocation failed.");
++    }
++
++    /* Populate frequency array */
++    for (UINT4 i = 0; i < freqs_In->length; i++)
++    {
++      freqs->data[i] = freqs_In->data[i];
++    }
++  }
++
++  memset((*wfamplitude)->data->data, 0, npts * sizeof(REAL8));
++  XLALUnitMultiply(&((*wfamplitude)->sampleUnits), &((*wfamplitude)->sampleUnits), &lalSecondUnit);
++    
++  memset((*wfphase)->data->data, 0, npts * sizeof(REAL8));
++  XLALUnitMultiply(&((*wfphase)->sampleUnits), &((*wfphase)->sampleUnits), &lalSecondUnit);
++
++  /* Check if LAL dictionary exists. If not, create a LAL dictionary. */
++  INT4 lalParams_In = 0;
++  if(lalParams == NULL)
++  {
++    lalParams_In = 1;
++    lalParams = XLALCreateDict();
++  }
++
++  if(debug)
++  {
++    printf("\n\n **** Initializing amplitude struct... **** \n\n");
++  }
++
++  /* Allocate and initialize the PhenomX 22 amplitude coefficients struct */
++  IMRPhenomXAmpCoefficients *pAmp22;
++  pAmp22 = XLALMalloc(sizeof(IMRPhenomXAmpCoefficients));
++  status = IMRPhenomXGetAmplitudeCoefficients(pWF,pAmp22);
++  XLAL_CHECK(XLAL_SUCCESS == status, XLAL_EFUNC, "Error: IMRPhenomXGetAmplitudeCoefficients failed.\n");
++
++  if(debug)
++  {
++    printf("\n\n **** Amplitude struct initialized. **** \n\n");
++    printf("\n\n **** Initializing phase struct... **** \n\n");
++  }
++
++  /* Allocate and initialize the PhenomX 22 phase coefficients struct */
++  IMRPhenomXPhaseCoefficients *pPhase22;
++  pPhase22 = XLALMalloc(sizeof(IMRPhenomXPhaseCoefficients));
++  status   = IMRPhenomXGetPhaseCoefficients(pWF,pPhase22);
++  XLAL_CHECK(XLAL_SUCCESS == status, XLAL_EFUNC, "Error: IMRPhenomXGetPhaseCoefficients failed.\n");
++
++  if(debug)
++  {
++    printf("\n\n **** Phase struct initialized. **** \n\n");
++  }
++
++  /*
++      Apply time shifts so peak amplitude is near t ~ 0.
++  */
++
++  /* Initialize a struct containing useful powers of Mf at fRef */
++  IMRPhenomX_UsefulPowers powers_of_MfRef;
++  status = IMRPhenomX_Initialize_Powers(&powers_of_MfRef,pWF->MfRef);
++  XLAL_CHECK(XLAL_SUCCESS == status, status, "IMRPhenomX_Initialize_Powers failed for MfRef.\n");
++
++  /* Linear time and phase shifts so that model peaks near t ~ 0 */
++  REAL8 lina = 0;
++
++  /* Get phase connection coefficients */
++  IMRPhenomX_Phase_22_ConnectionCoefficients(pWF,pPhase22);
++  double linb=IMRPhenomX_TimeShift_22(pPhase22, pWF);
++
++  /* 1/eta is used to re-scale phase */
++  REAL8 inveta    = (1.0 / pWF->eta);
++
++  /* Calculate phase at reference frequency: phifRef = 2.0*phi0 + LAL_PI_4 + PhenomXPhase(fRef) */
++  pWF->phifRef = -(inveta * IMRPhenomX_Phase_22(pWF->MfRef, &powers_of_MfRef, pPhase22, pWF) + linb*pWF->MfRef + lina) + 2.0*pWF->phi0 + LAL_PI_4;
++
++  /*
++      Here we declare explicit REAL8 variables for main loop in order to avoid numerous
++      pointer calls.
++  */
++  //REAL8 MfRef     = pWF->MfRef;
++  REAL8 Msec      = pWF->M_sec;
++
++  REAL8 C1IM      = pPhase22->C1Int;
++  REAL8 C2IM      = pPhase22->C2Int;
++  REAL8 C1RD      = pPhase22->C1MRD;
++  REAL8 C2RD      = pPhase22->C2MRD;
++
++  REAL8 fPhaseIN  = pPhase22->fPhaseMatchIN;
++  REAL8 fPhaseIM  = pPhase22->fPhaseMatchIM;
++  REAL8 fAmpIN    = pAmp22->fAmpMatchIN;
++  REAL8 fAmpIM    = pAmp22->fAmpRDMin;
++
++  if(debug)
++  {
++    printf("\n\n **** Phase struct initialized. **** \n\n");
++    printf("C1IM     = %.4f\n",C1IM);
++    printf("C2IM     = %.4f\n",C2IM);
++    printf("C1RD     = %.4f\n",C1RD);
++    printf("C2RD     = %.4f\n",C2RD);
++    printf("fIN      = %.4f\n",fPhaseIN);
++    printf("fIM      = %.4f\n",fPhaseIM);
++  }
++
++  REAL8 Amp0      = pWF->amp0 * pWF->ampNorm;
++
++  /* initial_status used to track  */
++  UINT4 initial_status = XLAL_SUCCESS;
++
++  /* Now loop over main driver to generate waveform:  h(f) = A(f) * Exp[I phi(f)] */
++  #pragma omp parallel for
++  for (UINT4 idx = 0; idx < freqs->length; idx++)
++  {
++    double Mf    = Msec * freqs->data[idx];   // Mf is declared locally inside the loop
++    UINT4 jdx    = idx  + offset;             // jdx is declared locally inside the loop
++
++    /* Initialize a struct containing useful powers of Mf */
++    IMRPhenomX_UsefulPowers powers_of_Mf;
++    initial_status     = IMRPhenomX_Initialize_Powers(&powers_of_Mf,Mf);
++    if(initial_status != XLAL_SUCCESS)
++    {
++      status = initial_status;
++      XLALPrintError("IMRPhenomX_Initialize_Powers failed for Mf, initial_status=%d",initial_status);
++    }
++    else
++    {
++      /* Generate amplitude and phase at MfRef */
++      REAL8 amp = 0.0;
++      REAL8 phi = 0.0;
++
++      /* The functions in this routine are inlined to help performance. */
++      /* Construct phase */
++      if(Mf < fPhaseIN)
++      {
++        phi = IMRPhenomX_Inspiral_Phase_22_AnsatzInt(Mf, &powers_of_Mf, pPhase22);
++      }
++      else if(Mf > fPhaseIM)
++      {
++        phi = IMRPhenomX_Ringdown_Phase_22_AnsatzInt(Mf, &powers_of_Mf, pWF, pPhase22) + C1RD + (C2RD * Mf);
++      }
++      else
++      {
++        phi = IMRPhenomX_Intermediate_Phase_22_AnsatzInt(Mf, &powers_of_Mf, pWF, pPhase22) + C1IM + (C2IM * Mf);
++      }
++
++	  /* Scale phase by 1/eta */
++	  phi  *= inveta;
++      phi  += linb*Mf + lina + pWF->phifRef;
++
++	  /* Construct amplitude */
++	  if(Mf < fAmpIN)
++	  {
++		  amp = IMRPhenomX_Inspiral_Amp_22_Ansatz(Mf, &powers_of_Mf, pWF, pAmp22);
++	  }
++	  else if(Mf > fAmpIM)
++	  {
++		  amp = IMRPhenomX_Ringdown_Amp_22_Ansatz(Mf, pWF, pAmp22);
++	  }
++	  else
++	  {
++        amp = IMRPhenomX_Intermediate_Amp_22_Ansatz(Mf, &powers_of_Mf, pWF, pAmp22);
++      }
++
++	  /* Reconstruct waveform: h(f) = A(f) * Exp[I phi(f)] */
++      ((*wfamplitude)->data->data)[jdx] = Amp0 * powers_of_Mf.m_seven_sixths * amp;
++      ((*wfphase)->data->data)[jdx] = phi;
++    }
++  }
++
++  // Free allocated memory
++  LALFree(pAmp22);
++  LALFree(pPhase22);
++  XLALDestroyREAL8Sequence(freqs);
++  if(lalParams_In == 1)
++  {
++    XLALDestroyDict(lalParams);
++  }
++
++  return status;
++}
+diff --git a/lalsimulation/lib/LALSimIMRPhenomX.h b/lalsimulation/lib/LALSimIMRPhenomX.h
+index 0815561bfc..4cc3beda16 100644
+--- a/lalsimulation/lib/LALSimIMRPhenomX.h
++++ b/lalsimulation/lib/LALSimIMRPhenomX.h
+@@ -48,6 +48,14 @@ int IMRPhenomXASGenerateFD(
+   LALDict *lalParams
+ );
+ 
++int IMRPhenomXASGenerateFDAmpPhs(
++  REAL8FrequencySeries **wfamplitude,
++  REAL8FrequencySeries **wfphase,
++  const REAL8Sequence *freqs,
++  IMRPhenomXWaveformStruct *pWF,
++  LALDict *lalParams
++);
++
+ 
+ int IMRPhenomXCheckForUniformFrequencies(REAL8Sequence *frequencies,REAL8 df);
+ 
 diff --git a/lalsimulation/lib/LALSimIMRSEOBNRv4ROM.c b/lalsimulation/lib/LALSimIMRSEOBNRv4ROM.c
-index 5a83110506..b9280ea05c 100644
+index 5a83110506..ac9968e592 100644
 --- a/lalsimulation/lib/LALSimIMRSEOBNRv4ROM.c
 +++ b/lalsimulation/lib/LALSimIMRSEOBNRv4ROM.c
 @@ -1616,3 +1616,480 @@ UNUSED static void SEOBNRv4ROM_Init_LALDATA(void)
@@ -509,8 +1132,8 @@ index 5a83110506..b9280ea05c 100644
 + * Compute strain waveform from amplitude and phase.
 +*/
 +UNUSED static int SEOBNRv4ROMCoreAmpPhs(
-+  COMPLEX16FrequencySeries **hptilde,	/**< Output: Frequency-domain waveform h+ */
-+  COMPLEX16FrequencySeries **hctilde,	/**< Output: Frequency-domain waveform hx */
++  REAL8FrequencySeries **wfamplitude,	/**< Output: Frequency-domain waveform h+ */
++  REAL8FrequencySeries **wfphase,	/**< Output: Frequency-domain waveform hx */
 +  double phiRef,			/**< Orbital phase (rad) */
 +  double fRef,				/**< Reference frequency */
 +  double distance,			/**< Distance of source (m) */
@@ -539,8 +1162,8 @@ index 5a83110506..b9280ea05c 100644
 + * Compute strain waveform from amplitude and phase.
 +*/
 +static int SEOBNRv4ROMCoreAmpPhs(
-+  COMPLEX16FrequencySeries **hptilde,	/**< [out] Frequency-domain waveform h+ */
-+  COMPLEX16FrequencySeries **hctilde,	/**< [out] Frequency-domain waveform hx */
++  REAL8FrequencySeries **wfamplitude,	/**< [out] Frequency-domain waveform h+ */
++  REAL8FrequencySeries **wfphase,	/**< [out] Frequency-domain waveform hx */
 +  double phiRef, 			/**< orbital reference phase */
 +  double fRef,				/**< Reference frequency */
 +  double distance,			/**< Distance of source (m) */
@@ -561,7 +1184,7 @@ index 5a83110506..b9280ea05c 100644
 +{
 +
 +  /* Check output arrays */
-+  if(!hptilde || !hctilde)
++  if(!wfamplitude || !wfphase)
 +    XLAL_ERROR(XLAL_EFAULT);
 +
 +  SEOBNRROMdataDS *romdata=&__lalsim_SEOBNRv4ROMDS_data;
@@ -570,9 +1193,9 @@ index 5a83110506..b9280ea05c 100644
 +               "Error setting up SEOBNRv4ROM data - check your $LAL_DATA_PATH\n");
 +  }
 +
-+  if(*hptilde || *hctilde) {
-+    XLALPrintError("(*hptilde) and (*hctilde) are supposed to be NULL, but got %p and %p",
-+                   (*hptilde), (*hctilde));
++  if(*wfamplitude || *wfphase) {
++    XLALPrintError("(*wfamplitude) and (*wfphase) are supposed to be NULL, but got %p and %p",
++                   (*wfamplitude), (*wfphase));
 +    XLAL_ERROR(XLAL_EFAULT);
 +  }
 +  int retcode=0;
@@ -748,8 +1371,8 @@ index 5a83110506..b9280ea05c 100644
 +      npts = NextPow2(fHigh * Mtot_sec / deltaF_geom) + 1;
 +
 +    XLALGPSAdd(&tC, -1. / deltaF);  /* coalesce at t=0 */
-+    *hptilde = XLALCreateCOMPLEX16FrequencySeries("hptilde: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, npts);
-+    *hctilde = XLALCreateCOMPLEX16FrequencySeries("hctilde: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, npts);
++    *wfamplitude = XLALCreateREAL8FrequencySeries("hptilde: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, npts);
++    *wfphase = XLALCreateREAL8FrequencySeries("hctilde: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, npts);
 +
 +    // Recreate freqs using only the lower and upper bounds
 +    // Use fLow, fHigh and deltaF rather than geometric frequencies for numerical accuracy
@@ -766,8 +1389,8 @@ index 5a83110506..b9280ea05c 100644
 +    offset = iStart;
 +  } else { // freqs contains frequencies with non-uniform spacing; we start at lowest given frequency
 +    npts = freqs_in->length;
-+    *hptilde = XLALCreateCOMPLEX16FrequencySeries("hptilde: FD waveform", &tC, fLow, 0, &lalStrainUnit, npts);
-+    *hctilde = XLALCreateCOMPLEX16FrequencySeries("hctilde: FD waveform", &tC, fLow, 0, &lalStrainUnit, npts);
++    *wfamplitude = XLALCreateREAL8FrequencySeries("hptilde: FD waveform", &tC, fLow, 0, &lalStrainUnit, npts);
++    *wfamplitude = XLALCreateREAL8FrequencySeries("hctilde: FD waveform", &tC, fLow, 0, &lalStrainUnit, npts);
 +    offset = 0;
 +
 +    freqs = XLALCreateREAL8Sequence(freqs_in->length);
@@ -778,7 +1401,7 @@ index 5a83110506..b9280ea05c 100644
 +      freqs->data[i] = freqs_in->data[i] * Mtot_sec;
 +  }
 +
-+  if (!(*hptilde) || !(*hctilde))	{
++  if (!(*wfamplitude) || !(*wfphase))	{
 +      XLALDestroyREAL8Sequence(freqs);
 +      gsl_spline_free(spline_amp);
 +      gsl_spline_free(spline_phi);
@@ -788,14 +1411,14 @@ index 5a83110506..b9280ea05c 100644
 +      SEOBNRROMdataDS_coeff_Cleanup(romdata_coeff_hi);
 +      XLAL_ERROR(XLAL_EFUNC);
 +  }
-+  memset((*hptilde)->data->data, 0, npts * sizeof(COMPLEX16));
-+  memset((*hctilde)->data->data, 0, npts * sizeof(COMPLEX16));
++  memset((*wfamplitude)->data->data, 0, npts * sizeof(REAL8));
++  memset((*wfphase)->data->data, 0, npts * sizeof(REAL8));
 +
-+  XLALUnitMultiply(&(*hptilde)->sampleUnits, &(*hptilde)->sampleUnits, &lalSecondUnit);
-+  XLALUnitMultiply(&(*hctilde)->sampleUnits, &(*hctilde)->sampleUnits, &lalSecondUnit);
++  XLALUnitMultiply(&(*wfamplitude)->sampleUnits, &(*wfamplitude)->sampleUnits, &lalSecondUnit);
++  XLALUnitMultiply(&(*wfphase)->sampleUnits, &(*wfphase)->sampleUnits, &lalSecondUnit);
 +
-+  COMPLEX16 *pdata=(*hptilde)->data->data;
-+  COMPLEX16 *cdata=(*hctilde)->data->data;
++  REAL8 *pdata=(*wfamplitude)->data->data;
++  REAL8 *cdata=(*wfphase)->data->data;
 +
 +  REAL8 cosi = cos(inclination);
 +  REAL8 pcoef = 0.5*(1.0 + cosi*cosi);
@@ -909,8 +1532,8 @@ index 5a83110506..b9280ea05c 100644
 + * frequency fLow and zeros beyond the cutoff frequency in the ringdown.
 + */
 +int XLALSimIMRSEOBNRv4ROMAmpPhs(
-+  struct tagCOMPLEX16FrequencySeries **hptilde, /**< Output: Frequency-domain waveform h+ */
-+  struct tagCOMPLEX16FrequencySeries **hctilde, /**< Output: Frequency-domain waveform hx */
++  struct tagREAL8FrequencySeries **wfamplitude, /**< Output: Frequency-domain waveform h+ */
++  struct tagREAL8FrequencySeries **wfphase, /**< Output: Frequency-domain waveform hx */
 +  REAL8 phiRef,                                 /**< Phase at reference time */
 +  REAL8 deltaF,                                 /**< Sampling frequency (Hz) */
 +  REAL8 fLow,                                   /**< Starting GW frequency (Hz) */
@@ -962,7 +1585,7 @@ index 5a83110506..b9280ea05c 100644
 +  freqs->data[0] = fLow;
 +  freqs->data[1] = fHigh;
 +
-+  int retcode = SEOBNRv4ROMCoreAmpPhs(hptilde, hctilde, phiRef, fRef, distance,
++  int retcode = SEOBNRv4ROMCoreAmpPhs(wfamplitude, wfphase, phiRef, fRef, distance,
 +                                inclination, Mtot_sec, eta, chi1, chi2, freqs,
 +                                deltaF, nk_max, LALparams, NRTidal_version);
 +
@@ -971,3 +1594,547 @@ index 5a83110506..b9280ea05c 100644
 +  return(retcode);
 +}
 +
+diff --git a/lalsimulation/lib/LALSimInspiral.h b/lalsimulation/lib/LALSimInspiral.h
+index b6d3acc555..1cbee07804 100644
+--- a/lalsimulation/lib/LALSimInspiral.h
++++ b/lalsimulation/lib/LALSimInspiral.h
+@@ -708,6 +708,12 @@ int XLALSimInspiralTaylorF2Core(COMPLEX16FrequencySeries **htilde, const REAL8Se
+ 
+ int XLALSimInspiralTaylorF2(COMPLEX16FrequencySeries **htilde, const REAL8 phi_ref, const REAL8 deltaF, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 S1z, const REAL8 S2z, const REAL8 fStart, const REAL8 fEnd, const REAL8 f_ref, const REAL8 r, LALDict *LALpars);
+ 
++
++int XLALSimInspiralTaylorF2CoreAmpPhs(REAL8FrequencySeries **wfamplitude, REAL8FrequencySeries **wfphase, const REAL8Sequence *freqs, const REAL8 phi_ref, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 f_ref, const REAL8 shft, const REAL8 r, LALDict *LALparams, PNPhasingSeries *pfaP);
++
++int XLALSimInspiralTaylorF2AmpPhs(REAL8FrequencySeries **wfamplitude, REAL8FrequencySeries **wfphase, const REAL8 phi_ref, const REAL8 deltaF, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 S1z, const REAL8 S2z, const REAL8 fStart, const REAL8 fEnd, const REAL8 f_ref, const REAL8 r, LALDict *LALpars);
++
++
+ /* TaylorF2Ecc functions */
+ /* in module LALSimInspiralTaylorF2Ecc.c */
+ int XLALSimInspiralTaylorF2CoreEcc(COMPLEX16FrequencySeries **htilde, const REAL8Sequence *freqs, const REAL8 phi_ref, const REAL8 m1_SI, const REAL8 m2_SI, const REAL8 f_ref, const REAL8 shft, const REAL8 r, const REAL8 eccentricity, LALDict *LALparams, PNPhasingSeries *pfaP);
+diff --git a/lalsimulation/lib/LALSimInspiralTaylorF2.c b/lalsimulation/lib/LALSimInspiralTaylorF2.c
+index 45facd5cde..509f8d0047 100644
+--- a/lalsimulation/lib/LALSimInspiralTaylorF2.c
++++ b/lalsimulation/lib/LALSimInspiralTaylorF2.c
+@@ -598,5 +598,522 @@ int XLALSimInspiralTaylorF2(
+ }
+ #include "LALSimInspiralTaylorF2Ecc.c"
+ 
++
++
++
++
++
++
++
++
++
++
++
++
++
++
++/********* Soumen's modification **********/
++
++
++
++
++
++
++int XLALSimInspiralTaylorF2CoreAmpPhs(
++        REAL8FrequencySeries **wfamplitude_out, /**< FD waveform */
++        REAL8FrequencySeries **wfphase_out, /**< FD waveform */
++	const REAL8Sequence *freqs,            /**< frequency points at which to evaluate the waveform (Hz) */
++        const REAL8 phi_ref,                   /**< reference orbital phase (rad) */
++        const REAL8 m1_SI,                     /**< mass of companion 1 (kg) */
++        const REAL8 m2_SI,                     /**< mass of companion 2 (kg) */
++        const REAL8 f_ref,                     /**< Reference GW frequency (Hz) - if 0 reference point is coalescence */
++	const REAL8 shft,		       /**< time shift to be applied to frequency-domain phase (sec)*/
++        const REAL8 r,                         /**< distance of source (m) */
++        LALDict *p, /**< Linked list containing the extra testing GR parameters >*/
++        PNPhasingSeries *pfaP /**< Phasing coefficients >**/
++        )
++{
++
++    if (!wfamplitude_out) XLAL_ERROR(XLAL_EFAULT);
++    if (!wfphase_out) XLAL_ERROR(XLAL_EFAULT);
++    if (!freqs) XLAL_ERROR(XLAL_EFAULT);
++    /* external: SI; internal: solar masses */
++    const REAL8 m1 = m1_SI / LAL_MSUN_SI;
++    const REAL8 m2 = m2_SI / LAL_MSUN_SI;
++    const REAL8 m = m1 + m2;
++    const REAL8 m_sec = m * LAL_MTSUN_SI;  /* total mass in seconds */
++    const REAL8 eta = m1 * m2 / (m * m);
++    const REAL8 piM = LAL_PI * m_sec;
++    REAL8 amp0;
++    size_t i;
++    REAL8 *dataA = NULL;
++    REAL8 *dataP = NULL;
++    LIGOTimeGPS tC = {0, 0};
++    INT4 iStart = 0;
++
++    REAL8FrequencySeries *wfamplitude = NULL;
++
++    if (*wfamplitude_out) { //case when htilde_out has been allocated in XLALSimInspiralTaylorF2
++	    wfamplitude = *wfamplitude_out;
++	    iStart = wfamplitude->data->length - freqs->length; //index shift to fill pre-allocated data
++	    if(iStart < 0) XLAL_ERROR(XLAL_EFAULT);
++    }
++    else { //otherwise allocate memory here
++	    wfamplitude = XLALCreateREAL8FrequencySeries("amplitude: FD waveform", &tC, freqs->data[0], 0., &lalStrainUnit, freqs->length);
++	    if (!wfamplitude) XLAL_ERROR(XLAL_EFUNC);
++	    XLALUnitMultiply(&wfamplitude->sampleUnits, &wfamplitude->sampleUnits, &lalSecondUnit);
++    }
++    
++    REAL8FrequencySeries *wfphase = NULL;
++
++    if (*wfphase_out) { //case when htilde_out has been allocated in XLALSimInspiralTaylorF2
++	    wfphase = *wfphase_out;
++	    iStart = wfphase->data->length - freqs->length; //index shift to fill pre-allocated data
++	    if(iStart < 0) XLAL_ERROR(XLAL_EFAULT);
++    }
++    else { //otherwise allocate memory here
++	    wfphase = XLALCreateREAL8FrequencySeries("phase: FD waveform", &tC, freqs->data[0], 0., &lalStrainUnit, freqs->length);
++	    if (!wfphase) XLAL_ERROR(XLAL_EFUNC);
++	    XLALUnitMultiply(&wfphase->sampleUnits, &wfphase->sampleUnits, &lalSecondUnit);
++    }
++
++    
++    PNPhasingSeries pfa = *pfaP;
++
++    REAL8 pfaN = 0.; REAL8 pfa1 = 0.;
++    REAL8 pfa2 = 0.; REAL8 pfa3 = 0.; REAL8 pfa4 = 0.;
++    REAL8 pfa5 = 0.; REAL8 pfl5 = 0.;
++    REAL8 pfa6 = 0.; REAL8 pfl6 = 0.;
++    REAL8 pfa7 = 0.;
++
++    INT4 phaseO=XLALSimInspiralWaveformParamsLookupPNPhaseOrder(p);
++    switch (phaseO)
++    {
++        case -1:
++        case 7:
++            pfa7 = pfa.v[7];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 6:
++            pfa6 = pfa.v[6];
++            pfl6 = pfa.vlogv[6];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 5:
++            pfa5 = pfa.v[5];
++            pfl5 = pfa.vlogv[5];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 4:
++            pfa4 = pfa.v[4];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 3:
++            pfa3 = pfa.v[3];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 2:
++            pfa2 = pfa.v[2];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 1:
++            pfa1 = pfa.v[1];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case 0:
++            pfaN = pfa.v[0];
++            break;
++        default:
++            XLAL_ERROR(XLAL_ETYPE, "Invalid phase PN order %d", phaseO);
++    }
++
++    /* Validate expansion order arguments.
++     * This must be done here instead of in the OpenMP parallel loop
++     * because when OpenMP parallelization is turned on, early exits
++     * from loops (via return or break statements) are not permitted.
++     */
++
++    /* Validate amplitude PN order. */
++    INT4 amplitudeO=XLALSimInspiralWaveformParamsLookupPNAmplitudeOrder(p);
++    switch (amplitudeO)
++    {
++        case -1:
++        case 7:
++        case 6:
++        case 5:
++        case 4:
++        case 3:
++        case 2:
++        case 0:
++            break;
++        default:
++            XLAL_ERROR(XLAL_ETYPE, "Invalid amplitude PN order %d", amplitudeO);
++    }
++
++    /* Generate tidal terms separately.
++     * Enums specifying tidal order are in LALSimInspiralWaveformFlags.h
++     */
++    REAL8 pft10 = 0.;
++    REAL8 pft12 = 0.;
++    REAL8 pft13 = 0.;
++    REAL8 pft14 = 0.;
++    REAL8 pft15 = 0.;
++    switch( XLALSimInspiralWaveformParamsLookupPNTidalOrder(p) )
++    {
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_75PN:
++            pft15 = pfa.v[15];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_DEFAULT:
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_7PN:
++            pft14 = pfa.v[14];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_65PN:
++            pft13 = pfa.v[13];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_6PN:
++	    pft12 = pfa.v[12];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_5PN:
++            pft10 = pfa.v[10];
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++            __attribute__ ((fallthrough));
++#endif
++        case LAL_SIM_INSPIRAL_TIDAL_ORDER_0PN:
++            break;
++        default:
++	    XLAL_ERROR(XLAL_EINVAL, "Invalid tidal PN order %d", XLALSimInspiralWaveformParamsLookupPNTidalOrder(p) );
++    }
++
++    /* The flux and energy coefficients below are used to compute SPA amplitude corrections */
++
++    /* flux coefficients */
++    const REAL8 FTaN = XLALSimInspiralPNFlux_0PNCoeff(eta);
++    const REAL8 FTa2 = XLALSimInspiralPNFlux_2PNCoeff(eta);
++    const REAL8 FTa3 = XLALSimInspiralPNFlux_3PNCoeff(eta);
++    const REAL8 FTa4 = XLALSimInspiralPNFlux_4PNCoeff(eta);
++    const REAL8 FTa5 = XLALSimInspiralPNFlux_5PNCoeff(eta);
++    const REAL8 FTl6 = XLALSimInspiralPNFlux_6PNLogCoeff(eta);
++    const REAL8 FTa6 = XLALSimInspiralPNFlux_6PNCoeff(eta);
++    const REAL8 FTa7 = XLALSimInspiralPNFlux_7PNCoeff(eta);
++
++    /* energy coefficients */
++    const REAL8 dETaN = 2. * XLALSimInspiralPNEnergy_0PNCoeff(eta);
++    const REAL8 dETa1 = 2. * XLALSimInspiralPNEnergy_2PNCoeff(eta);
++    const REAL8 dETa2 = 3. * XLALSimInspiralPNEnergy_4PNCoeff(eta);
++    const REAL8 dETa3 = 4. * XLALSimInspiralPNEnergy_6PNCoeff(eta);
++
++
++    /* Perform some initial checks */
++    if (m1_SI <= 0) XLAL_ERROR(XLAL_EDOM);
++    if (m2_SI <= 0) XLAL_ERROR(XLAL_EDOM);
++    if (f_ref < 0) XLAL_ERROR(XLAL_EDOM);
++    if (r <= 0) XLAL_ERROR(XLAL_EDOM);
++
++    /* extrinsic parameters */
++    amp0 = -4. * m1 * m2 / r * LAL_MRSUN_SI * LAL_MTSUN_SI * sqrt(LAL_PI/12.L);
++
++    dataA = wfamplitude->data->data;
++    dataP = wfphase->data->data;
++
++    /* Compute the SPA phase at the reference point
++     * N.B. f_ref == 0 means we define the reference time/phase at "coalescence"
++     * when the frequency approaches infinity. In that case,
++     * the integrals Eq. 3.15 of arXiv:0907.0700 vanish when evaluated at
++     * f_ref == infinity. If f_ref is finite, we must compute the SPA phase
++     * evaluated at f_ref, store it as ref_phasing and subtract it off.
++     */
++    REAL8 ref_phasing = 0.;
++    if( f_ref != 0. ) {
++        const REAL8 vref = cbrt(piM*f_ref);
++        const REAL8 logvref = log(vref);
++        const REAL8 v2ref = vref * vref;
++        const REAL8 v3ref = vref * v2ref;
++        const REAL8 v4ref = vref * v3ref;
++        const REAL8 v5ref = vref * v4ref;
++        const REAL8 v6ref = vref * v5ref;
++        const REAL8 v7ref = vref * v6ref;
++        const REAL8 v8ref = vref * v7ref;
++        const REAL8 v9ref = vref * v8ref;
++        const REAL8 v10ref = vref * v9ref;
++        const REAL8 v12ref = v2ref * v10ref;
++        const REAL8 v13ref = vref * v12ref;
++        const REAL8 v14ref = vref * v13ref;
++        const REAL8 v15ref = vref * v14ref;
++        ref_phasing += pfa7 * v7ref;
++        ref_phasing += (pfa6 + pfl6 * logvref) * v6ref;
++        ref_phasing += (pfa5 + pfl5 * logvref) * v5ref;
++        ref_phasing += pfa4 * v4ref;
++        ref_phasing += pfa3 * v3ref;
++        ref_phasing += pfa2 * v2ref;
++        ref_phasing += pfa1 * vref;
++        ref_phasing += pfaN;
++
++        /* Tidal terms in reference phasing */
++        ref_phasing += pft15 * v15ref;
++        ref_phasing += pft14 * v14ref;
++        ref_phasing += pft13 * v13ref;
++        ref_phasing += pft12 * v12ref;
++        ref_phasing += pft10 * v10ref;
++
++        ref_phasing /= v5ref;
++    } /* End of if(f_ref != 0) block */
++
++    #pragma omp parallel for
++    for (i = 0; i < freqs->length; i++) {
++        const REAL8 f = freqs->data[i];
++        const REAL8 v = cbrt(piM*f);
++        const REAL8 logv = log(v);
++        const REAL8 v2 = v * v;
++        const REAL8 v3 = v * v2;
++        const REAL8 v4 = v * v3;
++        const REAL8 v5 = v * v4;
++        const REAL8 v6 = v * v5;
++        const REAL8 v7 = v * v6;
++        const REAL8 v8 = v * v7;
++        const REAL8 v9 = v * v8;
++        const REAL8 v10 = v * v9;
++        const REAL8 v12 = v2 * v10;
++        const REAL8 v13 = v * v12;
++        const REAL8 v14 = v * v13;
++        const REAL8 v15 = v * v14;
++        REAL8 phasing = 0.;
++        REAL8 dEnergy = 0.;
++        REAL8 flux = 0.;
++        REAL8 amp;
++
++        phasing += pfa7 * v7;
++        phasing += (pfa6 + pfl6 * logv) * v6;
++        phasing += (pfa5 + pfl5 * logv) * v5;
++        phasing += pfa4 * v4;
++        phasing += pfa3 * v3;
++        phasing += pfa2 * v2;
++        phasing += pfa1 * v;
++        phasing += pfaN;
++
++        /* Tidal terms in phasing */
++        phasing += pft15 * v15;
++        phasing += pft14 * v14;
++        phasing += pft13 * v13;
++        phasing += pft12 * v12;
++        phasing += pft10 * v10;
++
++    /* WARNING! Amplitude orders beyond 0 have NOT been reviewed!
++     * Use at your own risk. The default is to turn them off.
++     * These do not currently include spin corrections.
++     * Note that these are not higher PN corrections to the amplitude.
++     * They are the corrections to the leading-order amplitude arising
++     * from the stationary phase approximation. See for instance
++     * Eq 6.9 of arXiv:0810.5336
++     */
++	switch (amplitudeO)
++        {
++            case 7:
++                flux += FTa7 * v7;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case 6:
++                flux += (FTa6 + FTl6*logv) * v6;
++                dEnergy += dETa3 * v6;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case 5:
++                flux += FTa5 * v5;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case 4:
++                flux += FTa4 * v4;
++                dEnergy += dETa2 * v4;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case 3:
++                flux += FTa3 * v3;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case 2:
++                flux += FTa2 * v2;
++                dEnergy += dETa1 * v2;
++#if __GNUC__ >= 7 && !defined __INTEL_COMPILER
++                __attribute__ ((fallthrough));
++#endif
++            case -1: /* Default to no SPA amplitude corrections */
++            case 0:
++                flux += 1.;
++                dEnergy += 1.;
++        }
++
++        phasing /= v5;
++        flux *= FTaN * v10;
++        dEnergy *= dETaN * v;
++        // Note the factor of 2 b/c phi_ref is orbital phase
++        phasing += shft * f - 2.*phi_ref - ref_phasing;
++        amp = amp0 * sqrt(-dEnergy/flux) * v;
++        dataA[i+iStart] = amp;
++        dataP[i+iStart] = phasing - LAL_PI_4;
++    }
++
++    *wfamplitude_out = wfamplitude;
++    *wfphase_out = wfphase;
++    return XLAL_SUCCESS;
++}
++
++
++
++
++
++/**
++ * Computes the stationary phase approximation to the Fourier transform of
++ * a chirp waveform. The amplitude is given by expanding \f$1/\sqrt{\dot{F}}\f$.
++ * If the PN order is set to -1, then the highest implemented order is used.
++ *
++ * @note f_ref is the GW frequency at which phi_ref is defined. The most common
++ * choice in the literature is to choose the reference point as "coalescence",
++ * when the frequency becomes infinite. This is the behavior of the code when
++ * f_ref==0. If f_ref > 0, phi_ref sets the orbital phase at that GW frequency.
++ *
++ * See arXiv:0810.5336 and arXiv:astro-ph/0504538 for spin corrections
++ * to the phasing.
++ * See arXiv:1303.7412 for spin-orbit phasing corrections at 3 and 3.5PN order
++ *
++ * The spin and tidal order enums are defined in LALSimInspiralWaveformFlags.h
++ */
++int XLALSimInspiralTaylorF2AmpPhs(
++        REAL8FrequencySeries **wfamplitude_out, /**< FD waveform */
++        REAL8FrequencySeries **wfphase_out, /**< FD waveform */
++        const REAL8 phi_ref,                   /**< reference orbital phase (rad) */
++        const REAL8 deltaF,                    /**< frequency resolution */
++        const REAL8 m1_SI,                     /**< mass of companion 1 (kg) */
++        const REAL8 m2_SI,                     /**< mass of companion 2 (kg) */
++        const REAL8 S1z,                       /**<  z component of the spin of companion 1 */
++        const REAL8 S2z,                       /**<  z component of the spin of companion 2  */
++        const REAL8 fStart,                    /**< start GW frequency (Hz) */
++        const REAL8 fEnd,                      /**< highest GW frequency (Hz) of waveform generation - if 0, end at Schwarzschild ISCO */
++        const REAL8 f_ref,                     /**< Reference GW frequency (Hz) - if 0 reference point is coalescence */
++        const REAL8 r,                         /**< distance of source (m) */
++        LALDict *p /**< Linked list containing the extra testing GR parameters >**/
++        )
++{
++    /* external: SI; internal: solar masses */
++    const REAL8 m1 = m1_SI / LAL_MSUN_SI;
++    const REAL8 m2 = m2_SI / LAL_MSUN_SI;
++    const REAL8 m = m1 + m2;
++    const REAL8 m_sec = m * LAL_MTSUN_SI;  /* total mass in seconds */
++    // const REAL8 eta = m1 * m2 / (m * m);
++    const REAL8 piM = LAL_PI * m_sec;
++    const REAL8 vISCO = 1. / sqrt(6.);
++    const REAL8 fISCO = vISCO * vISCO * vISCO / piM;
++    //const REAL8 m1OverM = m1 / m;
++    // const REAL8 m2OverM = m2 / m;
++    REAL8 shft, f_max;
++    size_t i, n;
++    INT4 iStart;
++    REAL8Sequence *freqs = NULL;
++    LIGOTimeGPS tC = {0, 0};
++    int ret;
++    int retcode;
++    REAL8 fCONT;
++    INT4 tideO = XLALSimInspiralWaveformParamsLookupPNTidalOrder(p);
++    REAL8 lambda1 = XLALSimInspiralWaveformParamsLookupTidalLambda1(p);
++    REAL8 lambda2 = XLALSimInspiralWaveformParamsLookupTidalLambda2(p);
++    retcode = XLALSimInspiralSetQuadMonParamsFromLambdas(p);
++    XLAL_CHECK(retcode == XLAL_SUCCESS, XLAL_EFUNC, "Failed to set quadparams from Universal relation.\n");
++
++    REAL8FrequencySeries *wfamplitude = NULL;
++    REAL8FrequencySeries *wfphase = NULL;
++
++    /* Perform some initial checks */
++    if (!wfamplitude_out) XLAL_ERROR(XLAL_EFAULT);
++    if (*wfamplitude_out) XLAL_ERROR(XLAL_EFAULT);
++    if (!wfphase_out) XLAL_ERROR(XLAL_EFAULT);
++    if (*wfphase_out) XLAL_ERROR(XLAL_EFAULT);
++    if (m1_SI <= 0) XLAL_ERROR(XLAL_EDOM);
++    if (m2_SI <= 0) XLAL_ERROR(XLAL_EDOM);
++    if (fStart <= 0) XLAL_ERROR(XLAL_EDOM);
++    if (f_ref < 0) XLAL_ERROR(XLAL_EDOM);
++    if (r <= 0) XLAL_ERROR(XLAL_EDOM);
++
++    /* allocate htilde */
++    if (( fEnd == 0. ) && ( tideO == 0 )) // End at ISCO
++        f_max = fISCO;
++    else if (( fEnd == 0. ) && ( tideO != 0 )) { // End at the minimum of the contact and ISCO frequencies only when tides are enabled
++        fCONT = XLALSimInspiralContactFrequency(m1, lambda1, m2, lambda2); /* Contact frequency of two compact objects */
++        f_max = (fCONT > fISCO) ? fISCO : fCONT;
++    }
++    else // End at user-specified freq.
++        f_max = fEnd;
++    if (f_max <= fStart) XLAL_ERROR(XLAL_EDOM);
++
++    n = (size_t) (f_max / deltaF + 1);
++    XLALGPSAdd(&tC, -1 / deltaF);  /* coalesce at t=0 */
++    wfamplitude = XLALCreateREAL8FrequencySeries("amplitude: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, n);
++    if (!wfamplitude) XLAL_ERROR(XLAL_EFUNC);
++    memset(wfamplitude->data->data, 0, n * sizeof(REAL8));
++    XLALUnitMultiply(&wfamplitude->sampleUnits, &wfamplitude->sampleUnits, &lalSecondUnit);
++    
++    wfphase = XLALCreateREAL8FrequencySeries("phase: FD waveform", &tC, 0.0, deltaF, &lalStrainUnit, n);
++    if (!wfphase) XLAL_ERROR(XLAL_EFUNC);
++    memset(wfphase->data->data, 0, n * sizeof(REAL8));
++    XLALUnitMultiply(&wfphase->sampleUnits, &wfphase->sampleUnits, &lalSecondUnit);
++
++    /* Fill with non-zero vals from fStart to f_max */
++    iStart = (INT4) ceil(fStart / deltaF);
++
++    /* Sequence of frequencies where waveform model is to be evaluated */
++    freqs = XLALCreateREAL8Sequence(n - iStart);
++
++    /* extrinsic parameters */
++    shft = LAL_TWOPI * (tC.gpsSeconds + 1e-9 * tC.gpsNanoSeconds);
++
++    #pragma omp parallel for
++    for (i = iStart; i < n; i++) {
++        freqs->data[i-iStart] = i * deltaF;
++    }
++
++    /* phasing coefficients */
++    PNPhasingSeries pfa;
++    XLALSimInspiralPNPhasing_F2(&pfa, m1, m2, S1z, S2z, S1z*S1z, S2z*S2z, S1z*S2z, p);
++
++    ret = XLALSimInspiralTaylorF2CoreAmpPhs(&wfamplitude, &wfphase, freqs, phi_ref, m1_SI, m2_SI,
++                                      f_ref, shft, r, p, &pfa);
++
++    XLALDestroyREAL8Sequence(freqs);
++
++    *wfamplitude_out = wfamplitude;
++    *wfphase_out = wfphase;
++
++    return ret;
++}
++
++
++
++
++
++
++
++
++
++
+ /** @} */
+ /** @} */

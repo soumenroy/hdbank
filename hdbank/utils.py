@@ -111,7 +111,7 @@ def mass1_mass2_to_mtotal_eta(mass1, mass2):
     return mtotal, eta
 
 
-def mass_from_knownmass_eta(known_mass, eta, known_is_secondary=False,
+def mass_from_knownmass_eta(eta, known_mass, known_is_secondary=False,
                             force_real=True):
     """
     Returns the other component mass given one of the component masses
@@ -618,6 +618,7 @@ def set_starting_position(args, rList, coord_utils):
         if mass2 >= args.nsbh_boundary_mass or mass1 <= args.nsbh_boundary_mass:
             spin1z, spin2z = chi, chi
         else:
+            spin1z = chi
             spin2z = 0.0
         
     # Transform into dimensionless PN chirptimes
