@@ -3,10 +3,11 @@
 git clone https://git.ligo.org/lscsoft/lalsuite.git
 cp modify.patch lalsuite
 cd lalsuite
-git checkout lalsuite-v7.3
+
+git checkout lalsuite-v7.11
 
 git apply modify.patch
-conda env create --name hdb -f conda/environment.yml
+conda env create --name hdb -f common/conda/environment.yml
 
 # https://stackoverflow.com/questions/34534513/calling-conda-source-activate-from-bash-script
 eval "$(conda shell.bash hook)"
